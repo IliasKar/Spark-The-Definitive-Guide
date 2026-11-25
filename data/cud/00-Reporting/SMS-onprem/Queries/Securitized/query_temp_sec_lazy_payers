@@ -1,0 +1,21 @@
+select AccountNumber, DebtorCDI, SourceBucket, ReferenceDate, NextInstallmentDate
+into #lp
+from #sec_perimeter
+where CourseOfAction = 'Collection'
+and SourcePastDueDays > 10 and SourcePastDueDays < 30
+and NextInstallmentDate >= ReferenceDate
+
+-- get info per account in the last 6 months
+select distinct a.AccountNumber, a.DebtorCDI, a.SourceBucket, a.ReferenceDate, b.NextInstallmentDate NEXT_BILLING_DATE
+into #six_month
+from output.Account a
+inner join #lp b
+on a.AccountNumber=b.AccountNumber and a.DebtorCDI=b.DebtorCDI
+where a.ReferenceDate >= DATEADD(month, -6, b.ReferenceDate)
+
+-- select accounts with max bucket=2 in the last 6 months
+select distinct AccountNumber, DebtorCDI 
+into #max_b2
+from #six_month
+group by AccountNumber, DebtorCDI
+having max(SourceBucket)=2

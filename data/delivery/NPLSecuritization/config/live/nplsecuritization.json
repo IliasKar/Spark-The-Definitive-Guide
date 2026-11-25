@@ -1,0 +1,11 @@
+
+{
+  "report_args": {
+    "portfolio_name": "",
+    "output_file_prefix": "NPLSecuritization_",
+    "report_output": "internalreports/nplsecuritization/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InternalReports_NPLSecuritization"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "euclid",
+    "output_file_prefix": "euclid_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/euclid/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_Euclid"
+  }
+}

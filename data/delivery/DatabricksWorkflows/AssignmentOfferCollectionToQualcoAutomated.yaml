@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    AssignmentOfferCollectionToQualcoAutomated:
+      name: AssignmentOfferCollectionToQualcoAutomated
+      email_notifications:
+        on_failure:
+          - dna-noreply@cepal.gr
+      tasks:
+        - task_key: Load_data_for_Qualco
+          notebook_task:
+            notebook_path: AssignmentsToQualco/Assignments to Qualco (Offer Collection)
+            source: GIT
+      git_source:
+        git_url: https://git-codecommit.eu-central-1.amazonaws.com/v1/repos/gr.cepal.dna.de.delivery
+        git_provider: awsCodeCommit
+        git_branch: master
+      queue:
+        enabled: true
+      run_as:
+        service_principal_name: 00f3ea27-8236-4f6a-8f9c-177668555720
+      permissions:
+        - group_name: Cepal-DSE-Users
+          permission_level: CAN_MANAGE_RUN

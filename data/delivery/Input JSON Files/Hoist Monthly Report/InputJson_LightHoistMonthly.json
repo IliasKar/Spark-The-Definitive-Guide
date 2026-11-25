@@ -1,0 +1,60 @@
+{
+ "report_name": "Light_Hoist_Monthly",
+ "report_job_name": "Light_Hoist_Monthly",
+ "report_schedule": "0 0 10 1,4,7,10 *", -- frequency: monthly (execution: 10th working day of the next month e.g. for December we want the 10th working day of January)
+ "report_job_id": "886359657853041", -- QA Job ID for Mercury as an example
+ "delivery_job_id": "1066234771409454",  -- Giannis to review
+ "email_job_id": "53401544384356", -- Giannis to review
+ "model": 1,
+ "report_args": {    -- note that on prod the ids below may change. So the QA json is different than the prod json
+   "portfolio_name": "Light",
+   "output_file_prefix": "Light_HoistMonthly_",
+   "report_output": "/Volumes/qa-cdh-delivery/InvestorReports/Light/LinebyLine/"
+ },
+ "delivery_args": {
+   "method": "s3",
+   "sftp_args": {
+    
+   },
+   "sharepoint_args": {
+    
+   },
+   "s3_args": {
+     "destination_path": "s3://qa-ec1-cepal-common-zone/onprem-outgoing/InvestorReports/Light/LinebyLine/"
+   }
+ },
+ "email_args": {
+   "external": { --- BI team to complete
+     "recipients_to": [
+       npapastefanakis+to1@cepal.gr,
+       npapastefanakis+to2@cepal.gr
+     ],
+     "recipients_cc": [
+       npapastefanakis+cc1@cepal.gr,
+       npapastefanakis+cc2@cepal.gr
+     ],
+     "recipients_bcc": [
+       npapastefanakis+bcc1@cepal.gr,
+       npapastefanakis+bcc2@cepal.gr
+     ],
+     "subject": "Internal Notification: EUCLID Servicer report",
+     "template_path": "/Volumes/qa-cdh-delivery/servicer-reports/euclid/email_notif_templates/EUCLID_Servicer_external.html"
+   },
+   "internal": {   -- Giannis to finalize here (these are the exceptions notifications)
+     "recipients_to": [
+       npapastefanakis+to11@example.com,
+       npapastefanakis+to12@example.com
+     ],
+     "recipients_cc": [
+       npapastefanakis+cc11@example.com
+     ],
+     "recipients_bcc": [
+       npapastefanakis+bcc11@example.com,
+       npapastefanakis+bcc12@example.com
+     ],
+     "subject": "Internal Notification: EUCLID Servicer report",
+     "template_path": "/Volumes/qa-cdh-delivery/servicer-reports/…"
+   }
+ },
+ "is_report_active": "False"
+}

@@ -1,0 +1,161 @@
+resources:
+  jobs:
+    MegaDataTape_LoadData:
+      name: MegaDataTape_LoadData
+      tags:
+        category: "report"
+      max_concurrent_runs: 1
+      parameters:
+        - name: run_date
+          default: ""
+        - name: portfolio
+          default: ""
+        - name: portfolio_exact_match
+          default: "false"
+      git_source:
+        git_url: https://git-codecommit.eu-central-1.amazonaws.com/v1/repos/gr.cepal.dna.de.delivery
+        git_provider: awsCodeCommit
+        git_branch: master
+      tasks:
+        # ── All notebooks run in parallel ──
+        - task_key: Collections
+          max_retries: 0
+          notebook_task:
+            notebook_path: MegaDataTape/LoadData/Collections
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+            source: GIT
+
+        - task_key: Borrower
+          max_retries: 0
+          notebook_task:
+            notebook_path: MegaDataTape/LoadData/Borrower
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+            source: GIT
+
+        - task_key: BorrowerMapping
+          max_retries: 0
+          notebook_task:
+            notebook_path: MegaDataTape/LoadData/BorrowerMapping
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+            source: GIT
+
+        - task_key: Collateral
+          max_retries: 0
+          notebook_task:
+            notebook_path: MegaDataTape/LoadData/Collateral
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+            source: GIT
+
+        - task_key: CollateralRealEstate
+          max_retries: 0
+          notebook_task:
+            notebook_path: MegaDataTape/LoadData/CollateralRealEstate
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+            source: GIT
+
+        - task_key: ContactHistory
+          max_retries: 0
+          notebook_task:
+            notebook_path: MegaDataTape/LoadData/ContactHistory
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+            source: GIT
+
+        - task_key: ExternalLienDB
+          max_retries: 0
+          notebook_task:
+            notebook_path: MegaDataTape/LoadData/ExternalLienDB
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+            source: GIT
+
+        - task_key: Installments
+          max_retries: 0
+          notebook_task:
+            notebook_path: MegaDataTape/LoadData/Installments
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+            source: GIT
+
+        - task_key: LoanSales
+          max_retries: 0
+          notebook_task:
+            notebook_path: MegaDataTape/LoadData/LoanSales
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+            source: GIT
+
+        # ── Loan depends only on Collections (reads mega-datatape.collections table) ──
+        - task_key: Loan
+          depends_on:
+            - task_key: Collections
+          max_retries: 0
+          notebook_task:
+            notebook_path: MegaDataTape/LoadData/Loan
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+            source: GIT
+
+        - task_key: ReAssetAppraisals
+          max_retries: 0
+          notebook_task:
+            notebook_path: MegaDataTape/LoadData/ReAssetAppraisals
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+            source: GIT
+
+        - task_key: RestructureMapping
+          max_retries: 0
+          notebook_task:
+            notebook_path: MegaDataTape/LoadData/RestructureMapping
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+            source: GIT
+
+        - task_key: CetusContactHistory
+          max_retries: 0
+          notebook_task:
+            notebook_path: MegaDataTape/LoadData/CetusContactHistory
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+            source: GIT
+
+      queue:
+        enabled: true
+      run_as:
+        service_principal_name: 00f3ea27-8236-4f6a-8f9c-177668555720
+      permissions:
+        - group_name: Cepal-DSE-Users
+          permission_level: CAN_MANAGE_RUN
+      performance_target: PERFORMANCE_OPTIMIZED

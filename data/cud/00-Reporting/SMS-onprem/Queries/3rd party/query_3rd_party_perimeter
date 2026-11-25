@@ -1,0 +1,24 @@
+-- Step 1: Bring all the CDIs for an account because bi.Loan contains only primary debtors
+select a.*, b.CDI DebtorCDI, PromiseStatus,
+case when lower(ActivityName) like '%dispute%' then 1 else 0 end as [Dispute Activity],
+    case when dateadd(day, -2, getdate()) <= ActivityDate and ActivityDate <= getdate() and ContactType = 'RIGHT PARTY CONTACT' then 1
+    else 0 end as [RPC last 2 days]
+into #all_CDIs
+from #loan a
+left join #cont_act b
+on a.AccountNumber=b.AccountNumber
+
+ -- Step 2: Join with the other tables to get needed columns
+select a.*, LegalForm, DeceasedFlag, PromiseStatus, RelationType, SettlementStatus
+from #all_CDIs a
+left join #customer b
+    on a.DebtorCDI=b.CDI
+left join #loan_cust_rel c
+    on a.AccountNumber=c.AccountNumber and a.DebtorCDI=c.CDI
+left join #settlement e
+    on a.AccountNumber=e.AccountNumber
+where PortfolioName in ('Cell', 'Light', 'Mercury', 'Orbit', 'Pearl Portfolio A') and IsActiveFlag=1
+    --and FinalBucket in (1,2,3)
+    --and (AssignmentProcess in ('3869 CA Dialer', 'CA Dialer', 'CA/FA/Sme Officer', 'Collection', 'Collection_Judicial_Escalation', 'DNC_Offer', 'Lf_Offer')
+    --or (CustomerSegment like 'L3869 Accepted%' or CustomerSegment like 'L3869 Court Approved%'))
+

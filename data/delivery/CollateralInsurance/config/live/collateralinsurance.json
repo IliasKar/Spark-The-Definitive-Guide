@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "",
+    "output_file_prefix": "",
+    "report_output": ""
+  },
+  "email_args": {
+    "recipients_entra_group": ""
+  }
+}

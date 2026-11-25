@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "Cell",
+    "output_file_prefix": "Cell_DetailedPortfolio_",
+    "report_output": "internalreports/detailedportfolio/cell/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InternalReports_DetailedPortfolio_cell"
+  }
+}

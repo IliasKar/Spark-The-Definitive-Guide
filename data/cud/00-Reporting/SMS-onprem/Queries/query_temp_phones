@@ -1,0 +1,17 @@
+select CUST_CIF CDI, CUST_AFM AFM_phones, CUPH_NUMBER [Mobile Phone], CUPH_ACTIVE [Mobile Phone Active], CUPH_DO_NOT_CALL [Do not call], CUPH_IS_DIALER [Is Dialer Phone], 
+IIF(lower(CUPH_ORIGIN_TYPE) like '%work%', 1, 0) [Mobile Phone work flag], CUPH_ORIGIN_TYPE [Mobile Phone Source]
+into #phones1
+from qca.DIM_CUSTOMER_PHONES ph
+inner join qca.DIM_CUSTOMER_STATIC cu
+on ph.CUPH_CODE=cu.CUAD_CODE
+-- keep only mobile phones
+where CUPH_ORIGIN_TYPE='MOBILE' or (CUPH_ORIGIN_TYPE<>'MOBILE' and CUPH_NUMBER like '69%')
+
+select cdi CDI, tax_number AFM_phones, Phone [Mobile Phone], CUPH_ACTIVE [Mobile Phone Active], CUPH_DO_NOT_CALL [Do not call], CUPH_IS_DIALER [Is Dialer Phone], 
+IIF(lower(CUPH_ORIGIN_TYPE) like '%work%', 1, 0) [Mobile Phone work flag], CUPH_ORIGIN_TYPE [Mobile Phone Source]
+into #phones2
+from qc.customer_phone cp
+inner join qc.customer c
+on cp.CUST_CODE=c.cust_code
+-- keep only mobile phones
+where CUPH_TYPE = 'MOBILE' or (CUPH_TYPE <> 'MOBILE' and Phone like '69%')

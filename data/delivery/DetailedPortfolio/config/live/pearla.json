@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "Pearl Portfolio A",
+    "output_file_prefix": "PearlA_DetailedPortfolio_",
+    "report_output": "internalreports/detailedportfolio/pearla/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InternalReports_DetailedPortfolio_pearla"
+  }
+}

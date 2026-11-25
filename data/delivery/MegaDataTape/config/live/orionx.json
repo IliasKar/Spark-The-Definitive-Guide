@@ -1,0 +1,11 @@
+{
+  "report_args": {
+    "portfolio_name": "orionx",
+    "output_file_prefix": "orionx_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/orionx/",
+    "zip_folder_prefix": "SPVI"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_OrionX"
+  }
+}

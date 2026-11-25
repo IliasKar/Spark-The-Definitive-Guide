@@ -1,0 +1,50 @@
+resources:
+  jobs:
+    MegaDataTape_Master:
+      name: MegaDataTape_Master
+      tags:
+        category: "report"
+      max_concurrent_runs: 5
+      parameters:
+        - name: run_date
+          default: ""
+        - name: portfolio
+          default: ""
+        - name: portfolio_exact_match
+          default: "false"
+        - name: skip_email
+          default: "false"
+      git_source:
+        git_url: https://git-codecommit.eu-central-1.amazonaws.com/v1/repos/gr.cepal.dna.de.delivery
+        git_provider: awsCodeCommit
+        git_branch: master
+      tasks:
+        - task_key: load_data
+          max_retries: 0
+          run_job_task:
+            job_id: <LOAD_DATA_JOB_ID>
+            job_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+
+        - task_key: export
+          max_retries: 0
+          depends_on:
+            - task_key: load_data
+          run_job_task:
+            job_id: <EXPORT_JOB_ID>
+            job_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+              skip_email: "{{job.parameters.skip_email}}"
+
+      queue:
+        enabled: true
+      run_as:
+        service_principal_name: 00f3ea27-8236-4f6a-8f9c-177668555720
+      permissions:
+        - group_name: Cepal-DSE-Users
+          permission_level: CAN_MANAGE_RUN
+      performance_target: PERFORMANCE_OPTIMIZED

@@ -1,0 +1,11 @@
+{
+  "report_args": {
+    "portfolio_name": "cetus",
+    "output_file_prefix": "cetus_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/cetus/",
+    "zip_folder_prefix": "Cetus"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_Cetus"
+  }
+}

@@ -1,0 +1,166 @@
+-- Create some useful temp tables to find maximum reference date per account. This is useful because we want most recent information
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d1
+from output.RA_AssignmentDataMapping
+group by AccountNumber
+
+select ACCOUNT_NUMBER, max(REF_DATE) ref_date
+into #max_d2
+from output.ExposuresN
+group by ACCOUNT_NUMBER
+
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d3
+from output.Account
+group by AccountNumber
+
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d4
+from output.LoanCustomerAttributes
+group by AccountNumber
+
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d5
+from output.CustomerMapping
+group by AccountNumber
+
+select DebtorCDI, max(ReferenceDate) ref_date
+into #max_d6
+from output.Customer
+group by DebtorCDI
+
+select AccountNumber, max(ReferenceDate) ref_date 
+into #max_d7
+from output.Assignment
+group by AccountNumber
+
+select TxtAccAccountNo, max(DatReferenceDate) ref_date
+into #max_d8
+from output.Assignment_Segmentation_Data
+group by TxtAccAccountNo
+
+select AccountNumber, max(ActivityDate) act_date
+into #max_d9
+from output.LoanActivities
+group by AccountNumber
+
+select distinct AccountNumber, max(PromiseDueDate) duedate 
+into #max_d10
+from output.PromiseActivities
+group by AccountNumber
+
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d11
+from output.RA_ModificationsProduction
+group by AccountNumber
+
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d12
+from output.RA_SavedInfο
+group by AccountNumber
+
+select Account, max(ReferenceDate) ref_date 
+into #max_d13
+from output.RA_MaxInflows
+group by Account
+
+select AccountNo, max(ReferenceDate) ref_date 
+into #max_d14
+from output.RA_Curings
+group by AccountNo
+
+select distinct ACCOUNT_NUMBER, max(ReferenceDate) ref_date
+into #max_d15
+from output.Daily_Portfolio
+group by ACCOUNT_NUMBER
+
+
+select distinct a.AccountNumber, DebtorCDI, CourseOfAction, AssignmentSegmentDetailed, RiskBucket, ReferenceDate
+into #ass_dm
+from output.RA_AssignmentDataMapping a
+inner join #max_d1 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.ACCOUNT_NUMBER, DENOUNCE_FLG
+into #exposures
+from output.ExposuresN a
+inner join #max_d2 b
+on a.ACCOUNT_NUMBER=b.ACCOUNT_NUMBER and a.REF_DATE=b.ref_date
+
+select distinct a.AccountNumber, AgreementNumber, IsActiveFlag, AssetSegment, SourcePastDueDays, SourceBucket, Queues, ProductKey, ProductDescription, SubProductDescription, SPV, OnBalanceAmount, Portfolio, ReferenceDate
+into #account
+from output.Account a
+inner join #max_d3 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.AccountNumber, DebtorCDI, CaseCode
+into #loan_cust_attr
+from output.LoanCustomerAttributes a
+inner join #max_d4 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.AccountNumber, DebtorCDI, RelationType
+into #cust_mapping
+from output.CustomerMapping a
+inner join #max_d5 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.DebtorCDI, DeceasedFlag, TaxNumber, LegalForm
+into #customer
+from output.Customer a
+inner join #max_d6 b
+on a.DebtorCDI=b.DebtorCDI and a.ReferenceDate=b.ref_date
+
+select distinct a.AccountNumber, DebtorCDI, AssignmentChannel
+into #assignment
+from output.Assignment a
+inner join #max_d7 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.TxtAccAccountNo, TxtCusCDI, TxtEntFinalSegment 
+into #ass_seg_data
+from output.Assignment_Segmentation_Data a
+inner join #max_d8 b
+on a.TxtAccAccountNo=b.TxtAccAccountNo and a.DatReferenceDate=b.ref_date
+
+select distinct a.AccountNumber, ActivityName, TotalRPCs, StrongestActivityType, ActivityDate, PromiseStatus
+into #loan_activities
+from output.LoanActivities a
+inner join #max_d9 b
+on a.AccountNumber=b.AccountNumber and a.ActivityDate=b.act_date
+
+select distinct a.AccountNumber, DebtorCDI, PromiseDueDate  
+into #prom_activities
+from output.PromiseActivities a
+inner join #max_d10 b
+on a.AccountNumber=b.AccountNumber and a.PromiseDueDate=b.duedate
+
+select distinct a.AccountNumber, ApplicationStatus 
+into #ra_mod_prod
+from output.RA_ModificationsProduction a
+inner join #max_d11 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.AccountNumber, CIF, EBAStatus, FinalSaved
+into #ra_saved_info
+from output.[RA_SavedInfο] a
+inner join #max_d12 b 
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.Account, InflowMonth
+into #ra_maxinflows
+from output.RA_MaxInflows a
+inner join #max_d13 b
+on a.Account=b.Account and a.ReferenceDate=b.ref_date
+
+select distinct a.AccountNo, OperationalBucket, ExitMonthGroupedNumber
+into #ra_curings
+from output.RA_Curings a
+inner join #max_d14 b
+on a.AccountNo=b.AccountNo and a.ReferenceDate=b.ref_date
+
+select distinct a.ACCOUNT_NUMBER, CUST_CIF, NEXT_BILLING_DATE 
+into #daily_portfolio
+from output.Daily_Portfolio a
+inner join #max_d15 b 
+on a.ACCOUNT_NUMBER=b.ACCOUNT_NUMBER and a.ReferenceDate=b.ref_date

@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "New Derivative Table Registration",
+      "description": "When a new notebook is created in a D* folder, reminds the developer to register the table in the generator script's TABLE_REGISTRY and offers to do it automatically.",
+      "trigger": "PostFileCreate",
+      "matcher": "(.*D[^/]*/[^/]*\\.ipynb$|.*D[^/]*/[^/]*\\.py$)",
+      "action": {
+        "type": "agent",
+        "prompt": "A new file was created in a derivative table folder. Please do the following:\n\n1. Check if the folder name (e.g., DNewTable) already exists in the TABLE_REGISTRY dictionary in comment_fields_documentation/generate_column_comments.py.\n\n2. If it does NOT exist in TABLE_REGISTRY:\n   - Inform the developer that this appears to be a new derivative table.\n   - Offer to automatically add it to the TABLE_REGISTRY in comment_fields_documentation/generate_column_comments.py with the entry: \"<FolderName>\": \"derivativeactive.<FolderName>\".\n   - Also offer to add the folder's file patterns to the derivative-doc-reminder.kiro.hook so that future edits trigger documentation reminders.\n   - Remind the developer that they should also create a steering file at .kiro/steering/<table-lower>-calculated-fields.md to document the calculated fields.\n\n3. If it already exists in TABLE_REGISTRY, inform the developer that the table is already registered and no action is needed.\n\n4. If the developer accepts, make the changes and remind them to commit before pushing."
+      },
+      "enabled": true
+    }
+  ]
+}

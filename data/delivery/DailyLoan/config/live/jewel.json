@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "JEWEL PORTFOLIO",
+    "output_file_prefix": "Jewel_DailyLoan_",
+    "report_output": "investorreports/dailyloan/jewel/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_DailyLoan_jewel"
+  }
+}

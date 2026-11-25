@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "GALENE",
+    "output_file_prefix": "Galene_DailyLoan_",
+    "report_output": "investorreports/dailyloan/galene/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_DailyLoan_galene"
+  }
+}

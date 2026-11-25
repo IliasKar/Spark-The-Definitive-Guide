@@ -1,0 +1,67 @@
+resources:
+  jobs:
+    MegaDataTape_Export:
+      name: MegaDataTape_Export
+      email_notifications:
+        on_failure:
+          - dna-noreply@cepal.gr
+      max_concurrent_runs: 5
+      tasks:
+        - task_key: load_configs
+          notebook_task:
+            notebook_path: MegaDataTape/Export/load_portfolio_configs
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              portfolio_exact_match: "{{job.parameters.portfolio_exact_match}}"
+              config_folder: "{{job.parameters.config_folder}}"
+              skip_email: "{{job.parameters.skip_email}}"
+            source: GIT
+        - task_key: run_exports
+          depends_on:
+            - task_key: load_configs
+          for_each_task:
+            inputs: "{{tasks.load_configs.values.portfolio_configs}}"
+            task:
+              task_key: portfolio_export
+              notebook_task:
+                notebook_path: MegaDataTape/Export/run_single_portfolio
+                base_parameters:
+                  notebook_name: "{{input.notebook_name}}"
+                  portfolio_name: "{{input.portfolio_name}}"
+                  last_eom_business_date: "{{input.last_eom_business_date}}"
+                  env_prefix: "{{input.env_prefix}}"
+                  output_dir: "{{input.output_dir}}"
+                  output_file_prefix: "{{input.output_file_prefix}}"
+                  report_output: "{{input.report_output}}"
+                  zip_folder_prefix: "{{input.zip_folder_prefix}}"
+                  skip_email: "{{input.skip_email}}"
+                  email_args: "{{input.email_args}}"
+                  export_base_path: "{{input.export_base_path}}"
+                  unc_base_path: "{{input.unc_base_path}}"
+                source: GIT
+      git_source:
+        git_url: https://git-codecommit.eu-central-1.amazonaws.com/v1/repos/gr.cepal.dna.de.delivery
+        git_provider: awsCodeCommit
+        git_branch: master
+      tags:
+        category: report
+      queue:
+        enabled: true
+      parameters:
+        - name: run_date
+          default: ""
+        - name: portfolio
+          default: ""
+        - name: portfolio_exact_match
+          default: "false"
+        - name: config_folder
+          default: live
+        - name: skip_email
+          default: "false"
+      run_as:
+        service_principal_name: 00f3ea27-8236-4f6a-8f9c-177668555720
+      performance_target: PERFORMANCE_OPTIMIZED
+      permissions:
+        group_name: Cepal-DSE-Users
+        permission_level: CAN_MANAGE_RUN

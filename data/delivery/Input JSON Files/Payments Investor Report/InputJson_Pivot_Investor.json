@@ -1,0 +1,60 @@
+{
+ "report_name": "Pivot_Payments_report"
+ "report_job_name": "Payments_Daily_Investor",
+ "report_schedule": "0 0 10 1,4,7,10 *", -- frequency: daily
+ "report_job_id": "967448589248900", -- QA Job ID 
+ "delivery_job_id": "1066234771409454", 
+ "email_job_id": "53401544384356",
+ "model": 1,
+ "report_args": {  
+   "portfolio_name": "Pivot", 
+   "output_file_prefix": "Pivot_Payments_report_", 
+   "report_output": "/Volumes/qa-cdh-delivery/InvestorReports/Payments/Pivot/"
+ },
+ "delivery_args": {
+   "method": "s3",
+   "sftp_args": {
+    
+   },
+   "sharepoint_args": {
+    
+   },
+   "s3_args": {
+     "destination_path": "s3://qa-ec1-cepal-common-zone/onprem-outgoing/InvestorReports/Payments/Pivot/"
+   }
+ },
+ "email_args": {
+   "external": { 
+     "recipients_to": [
+       npapastefanakis+to1@cepal.gr,
+       npapastefanakis+to2@cepal.gr
+     ],
+     "recipients_cc": [
+       npapastefanakis+cc1@cepal.gr,
+       npapastefanakis+cc2@cepal.gr
+     ],
+     "recipients_bcc": [
+       npapastefanakis+bcc1@cepal.gr,
+       npapastefanakis+bcc2@cepal.gr
+     ],
+     "subject": "Internal Notification: EUCLID Servicer report",
+     "template_path": "/Volumes/qa-cdh-delivery/servicer-reports/euclid/email_notif_templates/EUCLID_Servicer_external.html"
+   },
+   "internal": {   
+     "recipients_to": [
+       npapastefanakis+to11@example.com,
+       npapastefanakis+to12@example.com
+     ],
+     "recipients_cc": [
+       npapastefanakis+cc11@example.com
+     ],
+     "recipients_bcc": [
+       npapastefanakis+bcc11@example.com,
+       npapastefanakis+bcc12@example.com
+     ],
+     "subject": "Internal Notification: EUCLID Servicer report",
+     "template_path": "/Volumes/qa-cdh-delivery/servicer-reports/…"
+   }
+ },
+ "is_report_active": "False"
+}

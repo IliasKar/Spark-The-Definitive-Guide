@@ -1,0 +1,11 @@
+{
+  "report_args": {
+    "portfolio_name": "galaxyiv",
+    "output_file_prefix": "galaxyiv_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/galaxyiv/",
+    "zip_folder_prefix": "SPVIV"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_GalaxyIV"
+  }
+}

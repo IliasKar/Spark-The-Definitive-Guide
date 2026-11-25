@@ -1,0 +1,58 @@
+resources:
+  jobs:
+    DialerManualCampaign:
+      name: DialerManualCampaign
+      tags:
+        category: "report"
+      max_concurrent_runs: 5
+      parameters:
+        - name: run_date
+          default: ""
+        - name: portfolio
+          default: ""
+        - name: config_folder
+          default: "live"
+        - name: skip_email
+          default: "false"
+      git_source:
+        git_url: https://git-codecommit.eu-central-1.amazonaws.com/v1/repos/gr.cepal.dna.de.delivery
+        git_provider: awsCodeCommit
+        git_branch: master
+      tasks:
+        # Task 1: Load configs
+        - task_key: load_configs
+          max_retries: 0
+          notebook_task:
+            notebook_path: DialerManualCampaign/load_portfolio_configs
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              portfolio: "{{job.parameters.portfolio}}"
+              config_folder: "{{job.parameters.config_folder}}"
+            source: GIT
+
+        # Task 2: Run report for each config (native retry per item)
+        - task_key: run_reports
+          depends_on:
+            - task_key: load_configs
+          for_each_task:
+            inputs: "{{tasks.load_configs.values.portfolio_configs}}"
+            task:
+              task_key: report
+              max_retries: 0
+              notebook_task:
+                notebook_path: DialerManualCampaign/DialerManualCampaignReport
+                base_parameters:
+                  report_args: "{{input.report_args}}"
+                  report_name: "{{input.report_name}}"
+                  run_date: "{{input.run_date}}"
+                  env_prefix: "{{input.env_prefix}}"
+                source: GIT
+
+      queue:
+        enabled: true
+      run_as:
+        service_principal_name: 00f3ea27-8236-4f6a-8f9c-177668555720
+      permissions:
+        - group_name: Cepal-DSE-Users
+          permission_level: CAN_MANAGE_RUN
+      performance_target: PERFORMANCE_OPTIMIZED

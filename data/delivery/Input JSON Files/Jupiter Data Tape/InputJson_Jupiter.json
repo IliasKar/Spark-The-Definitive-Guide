@@ -1,0 +1,62 @@
+{
+ "report_name": "Jupiter_Monthly_Data_Tape",
+ "report_job_name": "Jupiter_Monthly_Data_Tape", -- TBD with Mega Data Tape
+ "report_schedule": "0 0 10 1,4,7,10 *", --frequency: Monthly/ Last Business Day of Previous Month
+ "report_job_id": "911398422453898", -- TBD with Mega Data Tape
+ "delivery_job_id": "1066234771409454",  -- Giannis to review
+ "email_job_id": "53401544384356", -- Giannis to review
+ "model": 1,
+ "report_args": {    -- note that on prod the ids below may change. So the QA json is different than the prod json
+   "ssrs_workspace_id": "2dc4eba7-9aab-4dff-be73-4fd9200eb8ab",   
+   "ssrs_report_id": "08194936-497b-40e4-91f9-10f00bfb6941",
+   "portfolio_name": "Jupiter",
+   "output_file_prefix": "Jupiter_Monthly_Data_Tape_",
+   "report_output": "/Volumes/qa-cdh-delivery/InvestorReports/Jupiter/MegaTape/"
+ },
+ "delivery_args": {
+   "method": "s3",
+   "sftp_args": {
+    
+   },
+   "sharepoint_args": {
+    
+   },
+   "s3_args": {
+     "destination_path": "s3://qa-ec1-cepal-common-zone/onprem-outgoing/InvestorReports/Jupiter/MegaTape/"
+   }
+ },
+ "email_args": {
+   "external": { --- BI team to complete
+     "recipients_to": [
+       npapastefanakis+to1@cepal.gr,
+       npapastefanakis+to2@cepal.gr
+     ],
+     "recipients_cc": [
+       npapastefanakis+cc1@cepal.gr,
+       npapastefanakis+cc2@cepal.gr
+     ],
+     "recipients_bcc": [
+       npapastefanakis+bcc1@cepal.gr,
+       npapastefanakis+bcc2@cepal.gr
+     ],
+     "subject": "Internal Notification: EUCLID Servicer report",
+     "template_path": "/Volumes/qa-cdh-delivery/servicer-reports/euclid/email_notif_templates/EUCLID_Servicer_external.html"
+   },
+   "internal": {   -- Giannis to finalize here (these are the exceptions notifications)
+     "recipients_to": [
+       npapastefanakis+to11@example.com,
+       npapastefanakis+to12@example.com
+     ],
+     "recipients_cc": [
+       npapastefanakis+cc11@example.com
+     ],
+     "recipients_bcc": [
+       npapastefanakis+bcc11@example.com,
+       npapastefanakis+bcc12@example.com
+     ],
+     "subject": "Internal Notification: EUCLID Servicer report",
+     "template_path": "/Volumes/qa-cdh-delivery/servicer-reports/…"
+   }
+ },
+ "is_report_active": "False"
+}

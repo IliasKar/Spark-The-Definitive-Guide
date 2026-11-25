@@ -1,0 +1,6 @@
+select distinct a.*
+from #six_month a
+inner join #max_b2 b
+on a.AccountNumber=b.AccountNumber and a.DebtorCDI=b.DebtorCDI
+
+--- the last criterion for lazy payers is checked from python ---

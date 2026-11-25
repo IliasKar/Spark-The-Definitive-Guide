@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "highbalance",
+    "output_file_prefix": "highbalance_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/highbalance/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_HighBalance"
+  }
+}

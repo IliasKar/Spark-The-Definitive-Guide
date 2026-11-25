@@ -1,0 +1,81 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: acci",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "args": [
+                "feed=acci"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python Debugger: post_codes",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "args": [
+                "feed=post_codes"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python Debugger: get_gemi_from_post_codes_ALL",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "gemi_api.py",
+            "args": [
+                "parse=all"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python Debugger: get_gemi_from_post_codes_2ndLevel_only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "gemi_api.py",
+            "args": [
+                "parse=lvl2"
+            ],
+            "console": "integratedTerminal"
+        },      
+        {
+            "name": "Python Debugger: get_gemi_from_post_codes_3rdLevel_only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "gemi_api.py",
+            "args": [
+                "parse=lvl3"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python Debugger: get_gemi_details all",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "gemi_details.py",
+            "args": [
+                "parse=all"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python Debugger: get_gemi_details failed",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "gemi_details.py",
+            "args": [
+                "parse=failed"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python Debugger: dedup gemi",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "./utils/dedup_CSV.py",            
+            "console": "integratedTerminal"
+        },  
+}

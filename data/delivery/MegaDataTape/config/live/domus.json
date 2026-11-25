@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "domus",
+    "output_file_prefix": "domus_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/domus/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_Domus"
+  }
+}

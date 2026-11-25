@@ -1,0 +1,27 @@
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d1
+from output.Account 
+group by AccountNumber
+
+select distinct a.AccountNumber, DebtorCDI, NextInstallmentDate, ReferenceDate
+into #account
+from output.Account a
+inner join #max_d1 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+where SourcePastDueDays > 10 and SourcePastDueDays < 30
+and NextInstallmentDate >= ReferenceDate 
+
+-- get info per account in the last 6 months
+select distinct a.AccountNumber, a.DebtorCDI, a.SourceBucket, a.ReferenceDate, b.NextInstallmentDate NEXT_BILLING_DATE
+into #six_month
+from output.Account a
+inner join #account b
+on a.AccountNumber=b.AccountNumber and a.DebtorCDI=b.DebtorCDI
+where a.ReferenceDate >= DATEADD(month, -6, b.ReferenceDate)
+
+-- select accounts with max bucket=2 in the last 6 months
+select distinct AccountNumber, DebtorCDI 
+into #max_b2
+from #six_month
+group by AccountNumber, DebtorCDI
+having max(SourceBucket)=2

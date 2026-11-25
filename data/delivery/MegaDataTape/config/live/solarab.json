@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "solarab",
+    "output_file_prefix": "solarab_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/solarab/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_SolarAB"
+  }
+}

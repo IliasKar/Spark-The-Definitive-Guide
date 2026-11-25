@@ -1,0 +1,11 @@
+{
+  "report_args": {
+    "portfolio_name": "galaxyii",
+    "output_file_prefix": "galaxyii_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/galaxyii/",
+    "zip_folder_prefix": "SPVII"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_GalaxyII"
+  }
+}

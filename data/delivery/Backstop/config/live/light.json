@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "Light",
+    "output_file_prefix": "Light_Backstop_",
+    "report_output": "internalreports/backstop/light/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InternalReports_Backstop_light"
+  }
+}

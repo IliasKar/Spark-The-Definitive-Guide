@@ -1,0 +1,54 @@
+{
+  "mcpServers": {
+    "databricks-prod": {
+      "command": "/home/karalis/.local/bin/uv",
+      "args": [
+        "--directory",
+        "/home/karalis/cepal/mcp-databricks-server",
+        "run",
+        "main.py"
+      ],
+      "env": {
+        "DATABRICKS_HOST": "${DATABRICKS_PROD_HOST}",
+        "DATABRICKS_CLIENT_ID": "${DATABRICKS_PROD_CLIENT_ID}",
+        "DATABRICKS_CLIENT_SECRET": "${DATABRICKS_PROD_CLIENT_SECRET}",
+        "DATABRICKS_SQL_WAREHOUSE_ID": "${DATABRICKS_PROD_SQL_WAREHOUSE_ID}"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "describe_uc_table"
+      ]
+    },
+    "databricks-dev": {
+      "command": "/home/karalis/.local/bin/uv",
+      "args": [
+        "--directory",
+        "/home/karalis/cepal/mcp-databricks-server",
+        "run",
+        "main.py"
+      ],
+      "env": {
+        "DATABRICKS_HOST": "${DATABRICKS_DEV_HOST}",
+        "DATABRICKS_TOKEN": "${DATABRICKS_DEV_TOKEN}",
+        "DATABRICKS_SQL_WAREHOUSE_ID": "${DATABRICKS_DEV_SQL_WAREHOUSE_ID}"
+      },
+      "disabled": false,
+      "autoApprove": []
+    },
+    "mssql-itstaging": {
+      "command": "/home/karalis/.local/bin/uv",
+      "args": [
+        "--directory",
+        "/home/karalis/.kiro/mcp-servers/mcp_mssql_server",
+        "run",
+        "server.py"
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "query",
+        "list_tables",
+        "list_columns"
+      ]
+    }
+  }
+}

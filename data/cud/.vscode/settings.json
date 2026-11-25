@@ -1,0 +1,4 @@
+{
+  "python.defaultInterpreterPath": "/home/karalis/cepal/gr.cepal.dna.de.cud/.venv/bin/python",
+  "databricks.python.envFile": "${workspaceFolder}/.databricks/.databricks.env"
+}

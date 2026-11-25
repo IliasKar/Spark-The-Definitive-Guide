@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "",
+    "output_file_prefix": "DialerManualCampaign_",
+    "report_output": "internalreports/dialermanualcampaign/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InternalReports_DialerManualCampaign"
+  }
+}

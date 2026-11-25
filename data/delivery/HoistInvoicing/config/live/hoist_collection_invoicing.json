@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "hoist_collection_invoicing",
+    "output_file_prefix": "hoistinvoicing",
+    "report_output": "internalreports/hoistinvoicing/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_HoistInvoicing"
+  }
+}

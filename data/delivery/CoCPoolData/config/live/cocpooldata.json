@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "",
+    "output_file_prefix": "CoCPoolData",
+    "report_output": "internalreports/cocpooldata/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InternalReports_Cocpooldata"
+  }
+}

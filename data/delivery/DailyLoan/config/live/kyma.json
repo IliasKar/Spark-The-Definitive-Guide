@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "KYMA",
+    "output_file_prefix": "Kyma_DailyLoan_",
+    "report_output": "investorreports/dailyloan/kyma/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_DailyLoan_kyma"
+  }
+}

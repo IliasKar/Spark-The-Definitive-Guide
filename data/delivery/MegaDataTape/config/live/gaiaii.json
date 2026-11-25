@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "gaiaii",
+    "output_file_prefix": "gaiaii_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/gaiaii/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_GaiaII"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "Cell",
+    "output_file_prefix": "Cell_Backstop_",
+    "report_output": "internalreports/backstop/cell/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InternalReports_Backstop_cell"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "Athena Portfolio",
+    "output_file_prefix": "Athena_DailyLoan_",
+    "report_output": "investorreports/dailyloan/athena/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_DailyLoan_athena"
+  }
+}

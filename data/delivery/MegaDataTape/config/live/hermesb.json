@@ -1,0 +1,11 @@
+{
+  "report_args": {
+    "portfolio_name": "hermesb",
+    "output_file_prefix": "hermesb_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/hermesb/",
+    "zip_folder_prefix": "HermesPortfolioB"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_HermesB"
+  }
+}

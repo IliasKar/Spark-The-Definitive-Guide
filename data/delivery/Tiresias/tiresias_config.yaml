@@ -1,0 +1,27 @@
+attributes:
+  is_business:
+    contains: "MME"
+  is_rejection:
+    startswith: "PTIR"
+  is_visually_checked:
+    contains: "OPT"
+  non_updated_type:
+    - startswith: "TIR"
+      contains: "LOANS"
+      value: 1
+    - startswith: "TIR"
+      contains: "MME"
+      value: 3
+
+file_formats:
+  "is_rejection==1 and is_visually_checked==0": "Rejections.format.xml"
+  "is_rejection==1 and is_visually_checked==1": "VisualRejections.format.xml"
+  "non_updated_type==1": "NonUpdatedPersonalLoan.format.xml"
+  "non_updated_type==2": "NonUpdatedCard.format.xml"
+  "non_updated_type==3": "NonUpdatedCompany.format.xml"
+
+file_paths:
+  format_files_path: "rejection_files/formats"
+  extracted_files_path: "rejection_files/extracted_rejection_files"
+  zip_files_path: "rejection_files/input_files"
+  koinopraktika_files_path: "rejection_files/koinopraktika_files"

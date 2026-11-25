@@ -1,0 +1,44 @@
+-- Step 1: Bring all the guarantors (output.Account contains only primary debtors)
+select a.*, b.DebtorCDI, CaseCode
+into #all_CDIs
+from #account a
+left join #loan_cust_attr b
+on a.AccountNumber=b.AccountNumber 
+
+-- Step 2: join with other tables to bring needed columns
+
+
+select a.*, TaxNumber, CourseOfAction, AssignmentSegmentDetailed, RiskBucket, DeceasedFlag, RelationType, AssignmentChannel, TxtEntFinalSegment, LegalForm, TotalRPCs, 
+StrongestActivityType, ActivityDate, PromiseDueDate, PromiseStatus, ApplicationStatus, EBAStatus, FinalSaved, InflowMonth, OperationalBucket, ExitMonthGroupedNumber, NEXT_BILLING_DATE, 
+    case when lower(ActivityName) like '%dispute%' then 1 else 0 end as [Dispute Activity],
+    case when dateadd(day, -2, getdate()) <= ActivityDate and ActivityDate <= getdate() and TotalRPCs > 0 then 1
+    else 0 end as [RPC last 2 days]
+into #core_perimeter
+from #all_CDIs a 
+left join #ass_dm c
+    on a.AccountNumber=c.AccountNumber and a.DebtorCDI=c.DebtorCDI
+left join #customer d
+    on a.DebtorCDI=d.DebtorCDI 
+left join #cust_mapping e
+    on a.AccountNumber=e.AccountNumber
+left join #assignment f
+    on a.AccountNumber=f.AccountNumber and a.DebtorCDI=f.DebtorCDI
+left join #ass_seg_data g
+    on a.AccountNumber=g.TxtAccAccountNo and a.DebtorCDI=g.TxtCusCDI
+left join #exposures h
+    on a.AccountNumber=h.ACCOUNT_NUMBER 
+left join #loan_activities i
+    on a.AccountNumber=i.AccountNumber
+left join #prom_activities j
+    on a.AccountNumber=j.AccountNumber and a.DebtorCDI=j.DebtorCDI
+left join #ra_mod_prod k
+    on a.AccountNumber=k.AccountNumber
+left join #ra_saved_info l
+    on a.AccountNumber=l.AccountNumber and a.DebtorCDI=l.CIF
+left join #ra_maxinflows m
+    on a.AccountNumber=m.Account
+left join #ra_curings n
+    on a.AccountNumber=n.AccountNo
+left join #daily_portfolio o
+    on a.AccountNumber=o.ACCOUNT_NUMBER and a.DebtorCDI=o.CUST_CIF
+where DENOUNCE_FLG=0 and IsActiveFlag=1

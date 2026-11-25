@@ -1,0 +1,104 @@
+
+------------------------------------------------------
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d1
+from output.RA_Assignment
+group by AccountNumber
+
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d2
+from output.Collections
+group by AccountNumber
+
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d3
+from output.Account
+group by AccountNumber
+
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d4
+from output.LoanCustomerAttributes
+group by AccountNumber
+
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d5
+from output.CustomerMapping
+group by AccountNumber
+
+select DebtorCDI, max(ReferenceDate) ref_date
+into #max_d6
+from output.Customer
+group by DebtorCDI
+
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d7
+from output.AssignmentSegmentation
+group by AccountNumber
+
+select AccountNumber, max(ReferenceDate) ref_date 
+into #max_d8
+from output.Assignment
+group by AccountNumber
+
+select AccountNumber, max(ActivityDate) act_date
+into #max_d9
+from output.LoanActivities
+group by AccountNumber
+
+-----------------------------------------------------------
+
+select distinct a.AccountNumber, DebtorCDI, CourseOfAction
+into #ra_assignment
+from output.RA_Assignment a
+inner join #max_d1 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.AccountNumber, DebtorCDI, DenouncedFlag
+into #collections
+from output.Collections a
+inner join #max_d2 b 
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.AccountNumber, AgreementNumber, IsActiveFlag, AssetSegment, SourcePastDueDays, SourceBucket, Queues, ProductKey, ProductDescription, SubProductDescription, SPV, GBV, Portfolio, NextInstallmentDate, ReferenceDate
+into #account
+from output.Account a
+inner join #max_d3 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.AccountNumber, DebtorCDI, CaseCode
+into #loan_cust_attr
+from output.LoanCustomerAttributes a
+inner join #max_d4 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.AccountNumber, DebtorCDI, RelationType
+into #cust_mapping
+from output.CustomerMapping a
+inner join #max_d5 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.DebtorCDI, DeceasedFlag, TaxNumber, LegalForm
+into #customer
+from output.Customer a
+inner join #max_d6 b
+on a.DebtorCDI=b.DebtorCDI and a.ReferenceDate=b.ref_date
+
+select distinct a.AccountNumber, CDI, FinalSegment 
+into #ass_seg
+from output.AssignmentSegmentation a
+inner join #max_d7 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.AccountNumber, DebtorCDI, AssignmentChannel
+into #assignment
+from output.Assignment a
+inner join #max_d8 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.AccountNumber, ActivityName, TotalRPCs, ActivityDate
+into #loan_activities
+from output.LoanActivities a
+inner join #max_d9 b
+on a.AccountNumber=b.AccountNumber and a.ActivityDate=b.act_date
+
+

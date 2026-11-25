@@ -1,0 +1,31 @@
+resources:
+  jobs:
+    Intraday_8702_assignments:
+      name: Intraday_8702_assignments
+      email_notifications:
+        on_failure:
+          - dna-noreply@cepal.gr
+      tasks:
+        - task_key: Intraday_Load_landed
+          run_job_task:
+            job_id: 272264108351808
+            job_parameters:
+              tables_to_process: dwh_stg.qca_personal_assignment_8702
+              ingestion_date: "{{job.trigger.time.iso_date}}"
+              schema_name: qca
+              group_name: ""
+              business_date: "{{job.trigger.time.iso_date}}"
+              database_name: dwh_stg
+              table_datamode: full
+        - task_key: AssignmentOfferCollectionToQualco
+          depends_on:
+            - task_key: Intraday_Load_landed
+          run_job_task:
+            job_id: 160607434644012
+      queue:
+        enabled: true
+      run_as:
+        service_principal_name: 00f3ea27-8236-4f6a-8f9c-177668555720
+      permissions:
+        - group_name: Cepal-DSE-Users
+          permission_level: CAN_MANAGE_RUN

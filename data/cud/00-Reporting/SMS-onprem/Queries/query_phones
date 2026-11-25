@@ -1,0 +1,3 @@
+select * from #phones1 
+union 
+select * from #phones2

@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Derivative Table Documentation Reminder",
+      "description": "When any derivative table notebook or Python file is edited, reminds the developer to update the calculated fields documentation (steering file) and regenerate the column comments script.",
+      "trigger": "PostFileSave",
+      "matcher": "(.*DAgreement/[^/]*\\.ipynb$|.*DAgreement/[^/]*\\.py$|.*DAuction/[^/]*\\.ipynb$|.*DAuction/[^/]*\\.py$|.*DAuction360Matching/[^/]*\\.ipynb$|.*DAuction360Matching/[^/]*\\.py$|.*DAuctionRealEstate/[^/]*\\.ipynb$|.*DAuctionRealEstate/[^/]*\\.py$|.*DCollateral/[^/]*\\.ipynb$|.*DCollateral/[^/]*\\.py$|.*DCollection/[^/]*\\.ipynb$|.*DCollection/[^/]*\\.py$|.*DDD/[^/]*\\.ipynb$|.*DDD/[^/]*\\.py$|.*DebtorUnified/[^/]*\\.ipynb$|.*DebtorUnified/[^/]*\\.py$|.*DEntityRelationships/[^/]*\\.ipynb$|.*DEntityRelationships/[^/]*\\.py$|.*DExposure/[^/]*\\.ipynb$|.*DExposure/[^/]*\\.py$|.*DLegalDataCore/[^/]*\\.ipynb$|.*DLegalDataCore/[^/]*\\.py$|.*DLegalDataSecuritized/[^/]*\\.ipynb$|.*DLegalDataSecuritized/[^/]*\\.py$|.*dparty/[^/]*\\.ipynb$|.*dparty/[^/]*\\.py$|.*DPaymentSchedule/[^/]*\\.ipynb$|.*DPaymentSchedule/[^/]*\\.py$|.*dporfoliotoolcore/[^/]*\\.ipynb$|.*dporfoliotoolcore/[^/]*\\.py$|.*dportfoliotoolsecuritized/[^/]*\\.ipynb$|.*dportfoliotoolsecuritized/[^/]*\\.py$|.*dportfoliotoolthirdparties/[^/]*\\.ipynb$|.*dportfoliotoolthirdparties/[^/]*\\.py$|.*DRealEstate/[^/]*\\.ipynb$|.*DRealEstate/[^/]*\\.py$|.*DRestructuring/[^/]*\\.ipynb$|.*DRestructuring/[^/]*\\.py$|.*DUnderLaw/[^/]*\\.ipynb$|.*DUnderLaw/[^/]*\\.py$)",
+      "action": {
+        "type": "agent",
+        "prompt": "A derivative table source file was modified. Please do the following:\n\n1. Identify which derivative table was modified from the file path (e.g., DExposure, DUnderLaw, DCollateral, etc.).\n\n2. Remind the user that the calculated field descriptions may need updating in:\n   - The steering file at .kiro/steering/<table>-calculated-fields.md (if it exists)\n   - The column comments script at comment_fields_documentation/<Table>_column_comments.py (if it exists)\n\n3. If the steering file does not yet exist for this table, offer to create it by analyzing the notebook and documenting each calculated field with its description and source lineage.\n\n4. Offer to auto-update the field descriptions by analyzing the diff of the modified file against the last committed version. Identify which column assignments or formula expressions changed, and update the corresponding field entries.\n\n5. After updating descriptions (or if the user declines), prompt the user to regenerate the column comments script by running:\n   python comment_fields_documentation/generate_column_comments.py --table <TableName>\n\n6. If the user declines all actions, dismiss and take no further action."
+      },
+      "enabled": true
+    }
+  ]
+}

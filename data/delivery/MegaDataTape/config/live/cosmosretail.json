@@ -1,0 +1,11 @@
+{
+  "report_args": {
+    "portfolio_name": "CosmosRetail",
+    "output_file_prefix": "CosmosRetail_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/CosmosRetail/",
+    "zip_folder_prefix": "CosmosRetail"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_CosmosRetail"
+  }
+}

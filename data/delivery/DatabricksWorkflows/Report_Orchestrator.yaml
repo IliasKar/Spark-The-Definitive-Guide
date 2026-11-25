@@ -1,0 +1,42 @@
+resources:
+  jobs:
+    Report_Orchestrator:
+      name: Report_Orchestrator
+      tags:
+        category: "report"
+        type: "orchestrator"
+      max_concurrent_runs: 1
+      parameters:
+        - name: run_date
+          default: ""
+        - name: skip_email
+          default: "false"
+        - name: frequency_filter
+          default: "all"  # daily, monthly, or all
+      git_source:
+        git_url: https://git-codecommit.eu-central-1.amazonaws.com/v1/repos/gr.cepal.dna.de.delivery
+        git_provider: awsCodeCommit
+        git_branch: master
+      tasks:
+        - task_key: orchestrator
+          max_retries: 0
+          notebook_task:
+            notebook_path: Report_Orchestrator/orchestrator
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+              skip_email: "{{job.parameters.skip_email}}"
+              frequency_filter: "{{job.parameters.frequency_filter}}"
+            source: GIT
+
+      schedule:
+        quartz_cron_expression: "0 0 7 ? * MON-FRI"
+        timezone_id: Europe/Athens
+        pause_status: UNPAUSED
+      queue:
+        enabled: true
+      run_as:
+        service_principal_name: 00f3ea27-8236-4f6a-8f9c-177668555720
+      permissions:
+        - group_name: Cepal-DSE-Users
+          permission_level: CAN_MANAGE_RUN
+      performance_target: PERFORMANCE_OPTIMIZED

@@ -1,0 +1,11 @@
+{
+  "report_args": {
+    "portfolio_name": "CosmosWholesale",
+    "output_file_prefix": "CosmosWholesale_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/CosmosWholesale/",
+    "zip_folder_prefix": "CosmosWHL"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_CosmosWholesale"
+  }
+}

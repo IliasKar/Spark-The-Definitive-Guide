@@ -1,0 +1,4 @@
+ -- here account does not contain the three letter of portfolio
+select distinct CASE_ACCOUNT_FOR_SEARCH Account, CASE_CONTR_NUM contract_number,case_code CaseCode from qca.dim_cases_static 
+union
+select distinct account_code Account, contract_number, case_code CaseCode from qc.case_master 

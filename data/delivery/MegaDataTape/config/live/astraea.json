@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "astraea",
+    "output_file_prefix": "Astraea_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/astraea/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_Astraea"
+  }
+}

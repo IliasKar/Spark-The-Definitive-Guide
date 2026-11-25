@@ -1,0 +1,29 @@
+-- Step 1: Bring all the guarantors (output.Account contains only primary debtors)
+select a.*, b.DebtorCDI, CaseCode
+into #all_CDIs
+from #account a
+left join #loan_cust_attr b
+on a.AccountNumber=b.AccountNumber
+
+-- Step 2: Join with other tables to bring needed columns
+select a.*, CaseCode, TaxNumber, CourseOfAction, DeceasedFlag, RelationType, AssignmentChannel, FinalSegment, LegalForm, TotalRPCs, ActivityDate,
+case when lower(ActivityName) like '%dispute%' then 1 else 0 end as [Dispute Activity],
+case when dateadd(day, -2, getdate()) <= ActivityDate and ActivityDate <= getdate() and TotalRPCs > 0 then 1
+    else 0 end as [RPC last 2 days]
+into #sec_perimeter
+from #all_CDIs a 
+left join #ra_assignment b
+    on a.AccountNumber=b.AccountNumber and a.DebtorCDI=b.DebtorCDI
+left join #collections c
+    on a.AccountNumber=c.AccountNumber and a.DebtorCDI=c.DebtorCDI
+left join #cust_mapping e
+    on a.AccountNumber=e.AccountNumber and a.DebtorCDI=e.DebtorCDI
+left join #customer f
+    on a.DebtorCDI=f.DebtorCDI
+left join #ass_seg g
+    on a.AccountNumber=g.AccountNumber and a.DebtorCDI=g.CDI
+left join #assignment h
+    on a.AccountNumber=h.AccountNumber and a.DebtorCDI=h.DebtorCDI
+left join #loan_activities i
+    on a.AccountNumber=i.AccountNumber
+where DenouncedFlag=0 and IsActiveFlag=1

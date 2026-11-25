@@ -1,0 +1,36 @@
+# Declarative Automation Bundle definition for gr.cepal.dna.de.delivery.
+# The Databricks extension requires a databricks.yml configuration file.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+#
+# Select the target (dev / qa / prod) in the Databricks extension's "Bundle Target"
+# picker to run notebooks against that workspace + interactive cluster.
+
+bundle:
+  name: gr-cepal-dna-de-delivery
+
+variables:
+  cluster_id:
+    description: Interactive (all-purpose) cluster for the selected target's workspace.
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-1c3bb27b-2d8f.cloud.databricks.com
+    variables:
+      cluster_id: "0506-121850-11rwc2ls"
+
+  qa:
+    mode: development
+    workspace:
+      host: https://dbc-51fda37b-2a9d.cloud.databricks.com
+    variables:
+      cluster_id: "0910-122305-l33im8ss"
+
+  prod:
+    mode: production
+    workspace:
+      host: https://dbc-7a36af91-f82b.cloud.databricks.com
+    variables:
+      cluster_id: "0910-082815-gy3ur47g"

@@ -1,0 +1,6 @@
+SELECT [businessDate]
+      ,replace([entityKey], '.', '_')  [entityKey]
+      ,[schemaName]
+      ,[records]
+      ,[ingestionDate]
+  FROM [SEDEV].[stg].[LandingRecords]

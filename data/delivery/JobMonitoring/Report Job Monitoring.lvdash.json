@@ -1,0 +1,1529 @@
+{
+  "datasets": [
+    {
+      "name": "00148abb",
+      "displayName": "Base Query",
+      "queryLines": [
+        "WITH r AS (\r\n",
+        "  SELECT\r\n",
+        "    jr.job_id,\r\n",
+        "    -- c.name AS job_name,\r\n",
+        "    jr.run_id,\r\n",
+        "    jr.job_parameters,\r\n",
+        "    jr.trigger_type,\r\n",
+        "    max_by(jr.result_state, jr.period_end_time) AS result_state,\r\n",
+        "    min(jr.period_start_time) AS run_start_time,\r\n",
+        "    max(jr.period_end_time)   AS run_end_time,\r\n",
+        "    max(jr.period_start_time) AS last_attempt_start_time,\r\n",
+        "    max(jr.run_duration_seconds) AS run_duration_seconds,\r\n",
+        "    c.report_type,\r\n",
+        "    c.report_frequency,\r\n",
+        "    c.report_schedule,\r\n",
+        "    c.report_job_category,\r\n",
+        "    c.report_job_name AS job_name,\r\n",
+        "    c.report_name\r\n",
+        "  FROM system.lakeflow.job_run_timeline jr\r\n",
+        "  JOIN system.lakeflow.jobs j\r\n",
+        "    ON j.job_id = jr.job_id\r\n",
+        "  INNER JOIN  `qa-reportinputfiles`.default.report_monitoring_config_v2 c\r\n",
+        "on c.report_job_id = j.job_id\r\n",
+        "  WHERE jr.result_state IS NOT NULL\r\n",
+        "  GROUP BY jr.job_id, jr.run_id, jr.job_parameters, C.report_type, C.report_frequency, c.report_schedule, c.report_job_category, jr.trigger_type, c.report_job_name, c.report_name\r\n",
+        "),\r\n",
+        "t_last_attempt AS (\r\n",
+        "  SELECT\r\n",
+        "    t.job_id,\r\n",
+        "    t.job_run_id AS run_id,\r\n",
+        "    t.task_key,\r\n",
+        "    r.report_job_category,\r\n",
+        "    max_by(t.result_state, t.period_end_time) AS task_state\r\n",
+        "  FROM system.lakeflow.job_task_run_timeline t\r\n",
+        "  JOIN r\r\n",
+        "    ON r.job_id = t.job_id\r\n",
+        "   AND r.run_id = t.job_run_id\r\n",
+        "  WHERE t.period_start_time >= r.last_attempt_start_time\r\n",
+        "    AND t.result_state IS NOT NULL\r\n",
+        "  GROUP BY t.job_id, t.job_run_id, t.task_key, r.report_job_category\r\n",
+        "),\r\n",
+        "\r\n",
+        "t_agg_single AS (\r\n",
+        "  SELECT\r\n",
+        "    job_id,\r\n",
+        "    run_id,\r\n",
+        "    to_json(\r\n",
+        "      map_from_entries(\r\n",
+        "        collect_list(named_struct('key', task_key, 'value', task_state))\r\n",
+        "      )\r\n",
+        "    ) AS report_status_json\r\n",
+        "  FROM t_last_attempt\r\n",
+        "  WHERE task_state <> 'SUCCEEDED'\r\n",
+        "  AND report_job_category = 'single'\r\n",
+        "  GROUP BY job_id, run_id\r\n",
+        "),\r\n",
+        "\r\n",
+        "t_agg_multiple AS (\r\n",
+        "  SELECT\r\n",
+        "    job_id,\r\n",
+        "    run_id,\r\n",
+        "    task_key,\r\n",
+        "    task_state,\r\n",
+        "    to_json(\r\n",
+        "      map_from_entries(\r\n",
+        "        collect_list(\r\n",
+        "          CASE \r\n",
+        "            WHEN task_state <> 'SUCCEEDED' \r\n",
+        "            THEN named_struct('key', task_key, 'value', task_state)\r\n",
+        "          END\r\n",
+        "        )\r\n",
+        "      )\r\n",
+        "    ) AS report_status_json\r\n",
+        "    -- to_json(\r\n",
+        "    --   map_from_entries(\r\n",
+        "    --     collect_list(named_struct('key', task_key, 'value', task_state))\r\n",
+        "    --   )\r\n",
+        "    -- ) AS report_status_json\r\n",
+        "  FROM t_last_attempt\r\n",
+        "  WHERE report_job_category = 'multiple'\r\n",
+        "  GROUP BY job_id, run_id, task_key, task_state\r\n",
+        "),\r\n",
+        "\r\n",
+        "-- real elapsed from ALL slices, but only for runs that exist in r (population stays the same)\r\n",
+        "r_time AS (\r\n",
+        "  SELECT\r\n",
+        "    jr.job_id,\r\n",
+        "    jr.run_id,\r\n",
+        "    timestampdiff(SECOND, min(jr.period_start_time), max(jr.period_end_time)) AS real_elapsed_seconds\r\n",
+        "  FROM system.lakeflow.job_run_timeline jr\r\n",
+        "  JOIN r\r\n",
+        "    ON r.job_id = jr.job_id\r\n",
+        "   AND r.run_id = jr.run_id\r\n",
+        "  GROUP BY jr.job_id, jr.run_id\r\n",
+        ")\r\n",
+        "\r\n",
+        "SELECT\r\n",
+        "  r.job_id,\r\n",
+        "  r.job_name,\r\n",
+        "  CASE WHEN r.report_job_category = 'multiple' THEN t_agg_multiple.task_key ELSE r.report_name END AS report_name,\r\n",
+        "  r.report_type,\r\n",
+        "  r.report_frequency,\r\n",
+        "  r.run_id,\r\n",
+        "  CASE WHEN r.report_job_category = 'multiple' THEN t_agg_multiple.task_state ELSE r.result_state END AS result_state,\r\n",
+        "  r.report_schedule,\r\n",
+        "  CAST(r.job_parameters AS STRING) AS job_parameters,\r\n",
+        "  CASE WHEN r.report_job_category = 'multiple' THEN COALESCE(t_agg_multiple.report_status_json, to_json(map())) ELSE COALESCE(t_agg_single.report_status_json, to_json(map())) END AS report_status_json,\r\n",
+        "  r.run_start_time,\r\n",
+        "  r.run_end_time,\r\n",
+        "  rt.real_elapsed_seconds,\r\n",
+        "  r.trigger_type,\r\n",
+        "  CASE WHEN r.report_frequency = 'daily' AND r.job_id IN('93076003251411','924226138564910') AND size(r.job_parameters) = 0 THEN rc_1_1.PreviousBusinessDay\r\n",
+        "       WHEN r.report_frequency = 'daily'  AND size(r.job_parameters) = 0 THEN rc_1.PreviousBusinessDay\r\n",
+        "       WHEN r.report_frequency = 'monthly'  AND size(r.job_parameters) = 0 THEN rc_2.CalendarDate\r\n",
+        "       WHEN r.report_frequency = 'quarterly'  AND size(r.job_parameters) = 0 THEN rc_3.CalendarDate\r\n",
+        "  END AS report_run_date,\r\n",
+        "  CASE WHEN size(r.job_parameters) = 0 THEN 'Scheduled' ELSE 'Adhoc' END report_run_type\r\n",
+        "FROM r\r\n",
+        "LEFT JOIN t_agg_single\r\n",
+        "  ON r.job_id = t_agg_single.job_id\r\n",
+        " AND r.run_id = t_agg_single.run_id\r\n",
+        "LEFT JOIN t_agg_multiple\r\n",
+        "  ON r.job_id = t_agg_multiple.job_id\r\n",
+        " AND r.run_id = t_agg_multiple.run_id\r\n",
+        "LEFT JOIN r_time rt\r\n",
+        "  ON r.job_id = rt.job_id\r\n",
+        " AND r.run_id = rt.run_id\r\n",
+        " LEFT JOIN `p-cdh`.reference.ref_calendar rc_1\r\n",
+        "   ON cast(r.run_start_time as date) = rc_1.CalendarDate\r\n",
+        " LEFT JOIN `p-cdh`.reference.ref_calendar rc_1_1\r\n",
+        "   ON rc_1.PreviousBusinessDay = rc_1_1.CalendarDate \r\n",
+        " LEFT JOIN (SELECT MAX(CalendarDate) CalendarDate, LastDateOfMonth\r\n",
+        "            FROM `p-cdh`.reference.ref_calendar\r\n",
+        "            WHERE IsBusinessDay = 1\r\n",
+        "            GROUP BY LastDateOfMonth) rc_2\r\n",
+        "   ON last_day(add_months(cast(r.run_start_time as date), -1)) = rc_2.LastDateOfMonth\r\n",
+        "  LEFT JOIN (SELECT MAX(CalendarDate) CalendarDate, LastDateOfQuarter\r\n",
+        "            FROM `p-cdh`.reference.ref_calendar\r\n",
+        "            WHERE IsBusinessDay = 1\r\n",
+        "            GROUP BY LastDateOfQuarter) rc_3\r\n",
+        "   ON last_day(add_months(trunc(cast(r.run_start_time as date), 'quarter'), -1)) = rc_3.LastDateOfQuarter \r\n",
+        " order by r.run_start_time desc\r\n",
+        "\r\n",
+        "-- WITH r AS (\r\n",
+        "--   SELECT\r\n",
+        "--     jr.job_id,\r\n",
+        "--     j.name AS job_name,\r\n",
+        "--     jr.run_id,\r\n",
+        "--     jr.job_parameters,\r\n",
+        "--     max_by(jr.result_state, jr.period_end_time) AS result_state,\r\n",
+        "--     min(jr.period_start_time) AS run_start_time,\r\n",
+        "--     max(jr.period_end_time)   AS run_end_time,\r\n",
+        "--     max(jr.period_start_time) AS last_attempt_start_time,\r\n",
+        "--     C.report_type,\r\n",
+        "--     C.report_frequency,\r\n",
+        "--     c.report_schedule\r\n",
+        "--   FROM system.lakeflow.job_run_timeline jr\r\n",
+        "--   JOIN system.lakeflow.jobs j\r\n",
+        "--     ON j.job_id = jr.job_id\r\n",
+        "--   INNER JOIN  `p-reportinputfiles`.default.report_monitoring_config c\r\n",
+        "-- on c.report_name = j.name\r\n",
+        "--   WHERE j.name NOT LIKE 'New Job %'\r\n",
+        "--     AND jr.result_state IS NOT NULL\r\n",
+        "--   GROUP BY jr.job_id, j.name, jr.run_id, jr.job_parameters, C.report_type, C.report_frequency, c.report_schedule\r\n",
+        "-- ),\r\n",
+        "-- t_last_attempt AS (\r\n",
+        "--   SELECT\r\n",
+        "--     t.job_id,\r\n",
+        "--     t.job_run_id AS run_id,\r\n",
+        "--     t.task_key,\r\n",
+        "--     max_by(t.result_state, t.period_end_time) AS task_state\r\n",
+        "--   FROM system.lakeflow.job_task_run_timeline t\r\n",
+        "--   JOIN r\r\n",
+        "--     ON r.job_id = t.job_id\r\n",
+        "--    AND r.run_id = t.job_run_id\r\n",
+        "--   WHERE t.period_start_time >= r.last_attempt_start_time\r\n",
+        "--     AND t.result_state IS NOT NULL\r\n",
+        "--   GROUP BY t.job_id, t.job_run_id, t.task_key\r\n",
+        "-- ),\r\n",
+        "\r\n",
+        "-- t_agg AS (\r\n",
+        "--   SELECT\r\n",
+        "--     job_id,\r\n",
+        "--     run_id,\r\n",
+        "--     task_key,\r\n",
+        "--     task_state,\r\n",
+        "--     to_json(\r\n",
+        "--       map_from_entries(\r\n",
+        "--         collect_list(named_struct('key', task_key, 'value', task_state))\r\n",
+        "--       )\r\n",
+        "--     ) AS report_status_json\r\n",
+        "--   FROM t_last_attempt\r\n",
+        "--   -- WHERE task_state <> 'SUCCEEDED'\r\n",
+        "--   GROUP BY job_id, run_id, task_key, task_state\r\n",
+        "-- ),\r\n",
+        "\r\n",
+        "-- -- real elapsed from ALL slices, but only for runs that exist in r (population stays the same)\r\n",
+        "-- r_time AS (\r\n",
+        "--   SELECT\r\n",
+        "--     jr.job_id,\r\n",
+        "--     jr.run_id,\r\n",
+        "--     timestampdiff(SECOND, min(jr.period_start_time), max(jr.period_end_time)) AS real_elapsed_seconds\r\n",
+        "--   FROM system.lakeflow.job_run_timeline jr\r\n",
+        "--   JOIN r\r\n",
+        "--     ON r.job_id = jr.job_id\r\n",
+        "--    AND r.run_id = jr.run_id\r\n",
+        "--   GROUP BY jr.job_id, jr.run_id\r\n",
+        "-- )\r\n",
+        "\r\n",
+        "-- SELECT\r\n",
+        "--   r.job_id,\r\n",
+        "--   r.job_name,\r\n",
+        "--   t_agg.task_key AS report_name,\r\n",
+        "--   r.report_type,\r\n",
+        "--   r.report_frequency,\r\n",
+        "--   r.run_id,\r\n",
+        "--   t_agg.task_state AS result_state,\r\n",
+        "--   r.report_schedule,\r\n",
+        "--   CAST(r.job_parameters AS STRING) AS job_parameters,\r\n",
+        "--   COALESCE(t_agg.report_status_json, to_json(map())) AS report_status_json,\r\n",
+        "--   r.run_start_time,\r\n",
+        "--   r.run_end_time,\r\n",
+        "--   rt.real_elapsed_seconds,\r\n",
+        "-- -- ποσοστό επιτυχίας 0..1\r\n",
+        "--   avg(CASE WHEN t_agg.task_state = 'SUCCEEDED' THEN 1.0 ELSE 0.0 END) OVER () AS success_rate,\r\n",
+        "-- -- ποσοστό αποτυχίας 0..1\r\n",
+        "--   avg(CASE WHEN t_agg.task_state <> 'SUCCEEDED' THEN 1.0 ELSE 0.0 END) OVER () AS fail_rate,\r\n",
+        "--   concat( lpad(cast(floor(avg(rt.real_elapsed_seconds) OVER () / 3600) as string), 2, '0'), ':', \r\n",
+        "--   lpad(cast(floor((avg(rt.real_elapsed_seconds) OVER () % 3600) / 60) as string), 2, '0'), ':', \r\n",
+        "--   lpad(cast(floor( avg(rt.real_elapsed_seconds) OVER () % 60) as string), 2, '0') )  AS avg_elapsed_hms\r\n",
+        "\r\n",
+        "-- FROM r\r\n",
+        "-- LEFT JOIN t_agg\r\n",
+        "--   ON r.job_id = t_agg.job_id\r\n",
+        "--  AND r.run_id = t_agg.run_id\r\n",
+        "-- LEFT JOIN r_time rt\r\n",
+        "--   ON r.job_id = rt.job_id\r\n",
+        "--  AND r.run_id = rt.run_id\r\n",
+        "--  order by r.run_start_time desc\r\n",
+        "\r\n",
+        "-- UNION ALL\r\n",
+        "\r\n",
+        "-- WITH r AS (\r\n",
+        "--   SELECT\r\n",
+        "--     jr.job_id,\r\n",
+        "--     j.name AS job_name,\r\n",
+        "--     jr.run_id,\r\n",
+        "--     jr.job_parameters,\r\n",
+        "--     max_by(jr.result_state, jr.period_end_time) AS result_state,\r\n",
+        "--     min(jr.period_start_time) AS run_start_time,\r\n",
+        "--     max(jr.period_end_time)   AS run_end_time,\r\n",
+        "--     max(jr.period_start_time) AS last_attempt_start_time,\r\n",
+        "--     C.report_type,\r\n",
+        "--     C.report_frequency,\r\n",
+        "--     c.report_schedule\r\n",
+        "--   FROM system.lakeflow.job_run_timeline jr\r\n",
+        "--   JOIN system.lakeflow.jobs j\r\n",
+        "--     ON j.job_id = jr.job_id\r\n",
+        "--   INNER JOIN  `p-reportinputfiles`.default.report_monitoring_config c\r\n",
+        "-- on c.report_name = j.name\r\n",
+        "--   WHERE j.name NOT LIKE 'New Job %'\r\n",
+        "--     AND jr.result_state IS NOT NULL\r\n",
+        "--   GROUP BY jr.job_id, j.name, jr.run_id, jr.job_parameters, C.report_type, C.report_frequency, c.report_schedule\r\n",
+        "-- ),\r\n",
+        "-- t_last_attempt AS (\r\n",
+        "--   SELECT\r\n",
+        "--     t.job_id,\r\n",
+        "--     t.job_run_id AS run_id,\r\n",
+        "--     t.task_key,\r\n",
+        "--     max_by(t.result_state, t.period_end_time) AS task_state\r\n",
+        "--   FROM system.lakeflow.job_task_run_timeline t\r\n",
+        "--   JOIN r\r\n",
+        "--     ON r.job_id = t.job_id\r\n",
+        "--    AND r.run_id = t.job_run_id\r\n",
+        "--   WHERE t.period_start_time >= r.last_attempt_start_time\r\n",
+        "--     AND t.result_state IS NOT NULL\r\n",
+        "--   GROUP BY t.job_id, t.job_run_id, t.task_key\r\n",
+        "-- ),\r\n",
+        "\r\n",
+        "-- t_agg AS (\r\n",
+        "--   SELECT\r\n",
+        "--     job_id,\r\n",
+        "--     run_id,\r\n",
+        "--     to_json(\r\n",
+        "--       map_from_entries(\r\n",
+        "--         collect_list(named_struct('key', task_key, 'value', task_state))\r\n",
+        "--       )\r\n",
+        "--     ) AS report_status_json\r\n",
+        "--   FROM t_last_attempt\r\n",
+        "--   WHERE task_state <> 'SUCCEEDED'\r\n",
+        "--   GROUP BY job_id, run_id\r\n",
+        "-- ),\r\n",
+        "\r\n",
+        "-- -- real elapsed from ALL slices, but only for runs that exist in r (population stays the same)\r\n",
+        "-- r_time AS (\r\n",
+        "--   SELECT\r\n",
+        "--     jr.job_id,\r\n",
+        "--     jr.run_id,\r\n",
+        "--     timestampdiff(SECOND, min(jr.period_start_time), max(jr.period_end_time)) AS real_elapsed_seconds\r\n",
+        "--   FROM system.lakeflow.job_run_timeline jr\r\n",
+        "--   JOIN r\r\n",
+        "--     ON r.job_id = jr.job_id\r\n",
+        "--    AND r.run_id = jr.run_id\r\n",
+        "--   GROUP BY jr.job_id, jr.run_id\r\n",
+        "-- )\r\n",
+        "\r\n",
+        "-- SELECT\r\n",
+        "--   r.job_id,\r\n",
+        "--   r.job_name,\r\n",
+        "--   --COALESCE(freq.frequency, 'irregular') AS frequency,\r\n",
+        "--   r.report_type,\r\n",
+        "--   r.report_frequency,\r\n",
+        "--   r.run_id,\r\n",
+        "--   r.job_parameters,\r\n",
+        "--   r.result_state,\r\n",
+        "--   r.report_schedule,\r\n",
+        "--   COALESCE(t_agg.report_status_json, to_json(map())) AS report_status_json,\r\n",
+        "--   r.run_start_time,\r\n",
+        "--   r.run_end_time,\r\n",
+        "--   rt.real_elapsed_seconds,\r\n",
+        "-- -- ποσοστό επιτυχίας 0..1\r\n",
+        "--   avg(CASE WHEN r.result_state = 'SUCCEEDED' THEN 1.0 ELSE 0.0 END) OVER () AS success_rate,\r\n",
+        "-- -- ποσοστό αποτυχίας 0..1\r\n",
+        "--   avg(CASE WHEN r.result_state <> 'SUCCEEDED' THEN 1.0 ELSE 0.0 END) OVER () AS fail_rate,\r\n",
+        "--   concat( lpad(cast(floor(avg(rt.real_elapsed_seconds) OVER () / 3600) as string), 2, '0'), ':', \r\n",
+        "--   lpad(cast(floor((avg(rt.real_elapsed_seconds) OVER () % 3600) / 60) as string), 2, '0'), ':', \r\n",
+        "--   lpad(cast(floor( avg(rt.real_elapsed_seconds) OVER () % 60) as string), 2, '0') )  AS avg_elapsed_hms\r\n",
+        "\r\n",
+        "-- FROM r\r\n",
+        "-- LEFT JOIN t_agg\r\n",
+        "--   ON r.job_id = t_agg.job_id\r\n",
+        "--  AND r.run_id = t_agg.run_id\r\n",
+        "-- LEFT JOIN r_time rt\r\n",
+        "--   ON r.job_id = rt.job_id\r\n",
+        "--  AND r.run_id = rt.run_id\r\n",
+        "--  order by r.run_start_time desc\r\n"
+      ]
+    },
+    {
+      "name": "ff582547",
+      "displayName": "KPI Query",
+      "queryLines": [
+        "WITH r AS (\r\n",
+        "  SELECT\r\n",
+        "    jr.job_id,\r\n",
+        "    j.name AS job_name,\r\n",
+        "    jr.run_id,\r\n",
+        "    max_by(jr.result_state, jr.period_end_time) AS result_state,\r\n",
+        "    max(jr.period_start_time) AS last_attempt_start_time,\r\n",
+        "    c.report_type,\r\n",
+        "    c.report_frequency,\r\n",
+        "    c.report_job_category\r\n",
+        "  FROM system.lakeflow.job_run_timeline jr\r\n",
+        "  JOIN system.lakeflow.jobs j\r\n",
+        "    ON j.job_id = jr.job_id\r\n",
+        "  JOIN `qa-reportinputfiles`.default.report_monitoring_config_v2 c\r\n",
+        "    ON c.report_job_id = j.job_id\r\n",
+        "  WHERE j.name NOT LIKE 'New Job %'\r\n",
+        "    AND jr.result_state IS NOT NULL\r\n",
+        "  GROUP BY\r\n",
+        "    jr.job_id, j.name, jr.run_id, c.report_type, c.report_frequency, c.report_job_category\r\n",
+        "),\r\n",
+        "\r\n",
+        "t_last_attempt AS (\r\n",
+        "  SELECT\r\n",
+        "    t.job_id,\r\n",
+        "    t.job_run_id AS run_id,\r\n",
+        "    t.task_key,\r\n",
+        "    r.report_job_category,\r\n",
+        "    r.result_state,\r\n",
+        "    max_by(t.result_state, t.period_end_time) AS task_state\r\n",
+        "  FROM system.lakeflow.job_task_run_timeline t\r\n",
+        "  JOIN r\r\n",
+        "    ON r.job_id = t.job_id\r\n",
+        "   AND r.run_id = t.job_run_id\r\n",
+        "  WHERE t.period_start_time >= r.last_attempt_start_time\r\n",
+        "    AND t.result_state IS NOT NULL\r\n",
+        "  GROUP BY t.job_id, t.job_run_id, t.task_key, r.report_job_category, r.result_state\r\n",
+        "),\r\n",
+        "\r\n",
+        "r_time AS (\r\n",
+        "  SELECT\r\n",
+        "    jr.job_id,\r\n",
+        "    jr.run_id,\r\n",
+        "    timestampdiff(\r\n",
+        "      SECOND,\r\n",
+        "      min(jr.period_start_time),\r\n",
+        "      max(jr.period_end_time)\r\n",
+        "    ) AS real_elapsed_seconds\r\n",
+        "  FROM system.lakeflow.job_run_timeline jr\r\n",
+        "  JOIN r\r\n",
+        "    ON r.job_id = jr.job_id\r\n",
+        "   AND r.run_id = jr.run_id\r\n",
+        "  GROUP BY jr.job_id, jr.run_id\r\n",
+        ")\r\n",
+        "\r\n",
+        "SELECT\r\n",
+        "  SUM(CASE WHEN t.report_job_category = 'multiple' AND t.task_state = 'SUCCEEDED' OR t.report_job_category = 'single' AND t.result_state = 'SUCCEEDED' THEN 1.0 ELSE 0.0 END) / COUNT(*) AS success_rate,\r\n",
+        "  SUM(CASE WHEN t.report_job_category = 'multiple' AND t.task_state <> 'SUCCEEDED' OR t.report_job_category = 'single' AND t.result_state <> 'SUCCEEDED' THEN 1.0 ELSE 0.0 END) / COUNT(*) AS fail_rate,\r\n",
+        "  AVG(rt.real_elapsed_seconds) AS avg_elapsed_seconds,\r\n",
+        "  concat(\r\n",
+        "    lpad(cast(floor(AVG(rt.real_elapsed_seconds) / 3600) AS STRING), 2, '0'), ':',\r\n",
+        "    lpad(cast(floor((AVG(rt.real_elapsed_seconds) % 3600) / 60) AS STRING), 2, '0'), ':',\r\n",
+        "    lpad(cast(floor(AVG(rt.real_elapsed_seconds) % 60) AS STRING), 2, '0')\r\n",
+        "  ) AS avg_elapsed_hms\r\n",
+        "FROM t_last_attempt t\r\n",
+        "LEFT JOIN r_time rt\r\n",
+        "  ON t.job_id = rt.job_id\r\n",
+        " AND t.run_id = rt.run_id;\r\n",
+        "\r\n",
+        "-- WITH r AS (\r\n",
+        "--   SELECT\r\n",
+        "--     jr.job_id,\r\n",
+        "--     j.name AS job_name,\r\n",
+        "--     jr.run_id,\r\n",
+        "--     max_by(jr.result_state, jr.period_end_time) AS result_state,\r\n",
+        "--     max(jr.period_start_time) AS last_attempt_start_time,\r\n",
+        "--     c.report_type,\r\n",
+        "--     c.report_frequency\r\n",
+        "--   FROM system.lakeflow.job_run_timeline jr\r\n",
+        "--   JOIN system.lakeflow.jobs j\r\n",
+        "--     ON j.job_id = jr.job_id\r\n",
+        "--   JOIN `p-reportinputfiles`.default.report_monitoring_config c\r\n",
+        "--     ON c.report_name = j.name\r\n",
+        "--   WHERE j.name NOT LIKE 'New Job %'\r\n",
+        "--     AND jr.result_state IS NOT NULL\r\n",
+        "--   GROUP BY\r\n",
+        "--     jr.job_id,\r\n",
+        "--     j.name,\r\n",
+        "--     jr.run_id,\r\n",
+        "--     c.report_type,\r\n",
+        "--     c.report_frequency\r\n",
+        "-- ),\r\n",
+        "\r\n",
+        "-- t_last_attempt AS (\r\n",
+        "--   SELECT\r\n",
+        "--     t.job_id,\r\n",
+        "--     t.job_run_id AS run_id,\r\n",
+        "--     t.task_key,\r\n",
+        "--     max_by(t.result_state, t.period_end_time) AS task_state\r\n",
+        "--   FROM system.lakeflow.job_task_run_timeline t\r\n",
+        "--   JOIN r\r\n",
+        "--     ON r.job_id = t.job_id\r\n",
+        "--    AND r.run_id = t.job_run_id\r\n",
+        "--   WHERE t.period_start_time >= r.last_attempt_start_time\r\n",
+        "--     AND t.result_state IS NOT NULL\r\n",
+        "--   GROUP BY t.job_id, t.job_run_id, t.task_key\r\n",
+        "-- ),\r\n",
+        "\r\n",
+        "-- r_time AS (\r\n",
+        "--   SELECT\r\n",
+        "--     jr.job_id,\r\n",
+        "--     jr.run_id,\r\n",
+        "--     timestampdiff(\r\n",
+        "--       SECOND,\r\n",
+        "--       min(jr.period_start_time),\r\n",
+        "--       max(jr.period_end_time)\r\n",
+        "--     ) AS real_elapsed_seconds\r\n",
+        "--   FROM system.lakeflow.job_run_timeline jr\r\n",
+        "--   JOIN r\r\n",
+        "--     ON r.job_id = jr.job_id\r\n",
+        "--    AND r.run_id = jr.run_id\r\n",
+        "--   GROUP BY jr.job_id, jr.run_id\r\n",
+        "-- )\r\n",
+        "\r\n",
+        "-- SELECT\r\n",
+        "--   SUM(CASE WHEN t.task_state = 'SUCCEEDED' THEN 1.0 ELSE 0.0 END) / COUNT(*) AS success_rate,\r\n",
+        "--   SUM(CASE WHEN t.task_state <> 'SUCCEEDED' THEN 1.0 ELSE 0.0 END)/ COUNT(*) AS fail_rate,\r\n",
+        "--   AVG(rt.real_elapsed_seconds) AS avg_elapsed_seconds,\r\n",
+        "--   concat(\r\n",
+        "--     lpad(cast(floor(AVG(rt.real_elapsed_seconds) / 3600) AS STRING), 2, '0'), ':',\r\n",
+        "--     lpad(cast(floor((AVG(rt.real_elapsed_seconds) % 3600) / 60) AS STRING), 2, '0'), ':',\r\n",
+        "--     lpad(cast(floor(AVG(rt.real_elapsed_seconds) % 60) AS STRING), 2, '0')\r\n",
+        "--   ) AS avg_elapsed_hms\r\n",
+        "-- FROM t_last_attempt t\r\n",
+        "-- LEFT JOIN r_time rt\r\n",
+        "--   ON t.job_id = rt.job_id\r\n",
+        "--  AND t.run_id = rt.run_id\r\n",
+        "\r\n",
+        "-- UNION ALL\r\n",
+        "\r\n",
+        "-- WITH r AS (\r\n",
+        "--   SELECT\r\n",
+        "--     jr.job_id,\r\n",
+        "--     j.name AS job_name,\r\n",
+        "--     jr.run_id,\r\n",
+        "--     max_by(jr.result_state, jr.period_end_time) AS result_state,\r\n",
+        "--     max(jr.period_start_time) AS last_attempt_start_time,\r\n",
+        "--     c.report_type,\r\n",
+        "--     c.report_frequency\r\n",
+        "--   FROM system.lakeflow.job_run_timeline jr\r\n",
+        "--   JOIN system.lakeflow.jobs j\r\n",
+        "--     ON j.job_id = jr.job_id\r\n",
+        "--   JOIN `p-reportinputfiles`.default.report_monitoring_config c\r\n",
+        "--     ON c.report_name = j.name\r\n",
+        "--   WHERE j.name NOT LIKE 'New Job %'\r\n",
+        "--     AND jr.result_state IS NOT NULL\r\n",
+        "--   GROUP BY\r\n",
+        "--     jr.job_id,\r\n",
+        "--     j.name,\r\n",
+        "--     jr.run_id,\r\n",
+        "--     c.report_type,\r\n",
+        "--     c.report_frequency\r\n",
+        "-- ),\r\n",
+        "\r\n",
+        "-- -- t_last_attempt AS (\r\n",
+        "-- --   SELECT\r\n",
+        "-- --     t.job_id,\r\n",
+        "-- --     t.job_run_id AS run_id,\r\n",
+        "-- --     t.task_key,\r\n",
+        "-- --     max_by(t.result_state, t.period_end_time) AS task_state\r\n",
+        "-- --   FROM system.lakeflow.job_task_run_timeline t\r\n",
+        "-- --   JOIN r\r\n",
+        "-- --     ON r.job_id = t.job_id\r\n",
+        "-- --    AND r.run_id = t.job_run_id\r\n",
+        "-- --   WHERE t.period_start_time >= r.last_attempt_start_time\r\n",
+        "-- --     AND t.result_state IS NOT NULL\r\n",
+        "-- --   GROUP BY t.job_id, t.job_run_id, t.task_key\r\n",
+        "-- -- ),\r\n",
+        "\r\n",
+        "-- r_time AS (\r\n",
+        "--   SELECT\r\n",
+        "--     jr.job_id,\r\n",
+        "--     jr.run_id,\r\n",
+        "--     timestampdiff(\r\n",
+        "--       SECOND,\r\n",
+        "--       min(jr.period_start_time),\r\n",
+        "--       max(jr.period_end_time)\r\n",
+        "--     ) AS real_elapsed_seconds\r\n",
+        "--   FROM system.lakeflow.job_run_timeline jr\r\n",
+        "--   JOIN r\r\n",
+        "--     ON r.job_id = jr.job_id\r\n",
+        "--    AND r.run_id = jr.run_id\r\n",
+        "--   GROUP BY jr.job_id, jr.run_id\r\n",
+        "-- )\r\n",
+        "\r\n",
+        "-- SELECT\r\n",
+        "--   SUM(CASE WHEN r.result_state = 'SUCCEEDED' THEN 1.0 ELSE 0.0 END) / COUNT(*) AS success_rate,\r\n",
+        "--   SUM(CASE WHEN r.result_state <> 'SUCCEEDED' THEN 1.0 ELSE 0.0 END)/ COUNT(*) AS fail_rate,\r\n",
+        "--   AVG(rt.real_elapsed_seconds) AS avg_elapsed_seconds,\r\n",
+        "--   concat(\r\n",
+        "--     lpad(cast(floor(AVG(rt.real_elapsed_seconds) / 3600) AS STRING), 2, '0'), ':',\r\n",
+        "--     lpad(cast(floor((AVG(rt.real_elapsed_seconds) % 3600) / 60) AS STRING), 2, '0'), ':',\r\n",
+        "--     lpad(cast(floor(AVG(rt.real_elapsed_seconds) % 60) AS STRING), 2, '0')\r\n",
+        "--   ) AS avg_elapsed_hms\r\n",
+        "-- FROM r\r\n",
+        "-- LEFT JOIN r_time rt\r\n",
+        "--   ON r.job_id = rt.job_id\r\n",
+        "--  AND r.run_id = rt.run_id;"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "d50fdd34",
+      "displayName": "Job Monitoring",
+      "layout": [
+        {
+          "widget": {
+            "name": "total-runs",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "00148abb",
+                  "fields": [
+                    {
+                      "name": "count(job_id)",
+                      "expression": "COUNT(`job_id`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(job_id)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "style": {
+                    "color": {
+                      "themeColorType": "selectionColor"
+                    },
+                    "rules": [
+                      {
+                        "condition": {
+                          "operator": ">="
+                        },
+                        "color": "#00A972"
+                      }
+                    ]
+                  }
+                }
+              },
+              "frame": {
+                "title": "Total Report Runs",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "8f343b46",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "00148abb",
+                  "fields": [
+                    {
+                      "name": "count(job_id)",
+                      "expression": "COUNT(`job_id`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`result_state` IN ('SUCCEEDED')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(job_id)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "style": {
+                    "color": {
+                      "themeColorType": "visualizationColors",
+                      "position": 3
+                    },
+                    "rules": [
+                      {
+                        "condition": {
+                          "operator": ">="
+                        },
+                        "color": "#00A972"
+                      }
+                    ]
+                  }
+                }
+              },
+              "frame": {
+                "title": "Succeeded Report Runs",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 0,
+            "width": 2,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "6e38ddb8",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "00148abb",
+                  "fields": [
+                    {
+                      "name": "count(job_id)",
+                      "expression": "COUNT(`job_id`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`result_state` IS NULL OR `result_state` NOT IN ('SUCCEEDED')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(job_id)",
+                  "style": {
+                    "color": {
+                      "themeColorType": "visualizationColors",
+                      "position": 4
+                    }
+                  },
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "title": "Failed Report Runs",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 0,
+            "width": 2,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "765ab108",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ff582547",
+                  "fields": [
+                    {
+                      "name": "avg_elapsed_hms",
+                      "expression": "`avg_elapsed_hms`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Ever Avg Elapsed Time",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "avg_elapsed_hms",
+                  "style": {
+                    "color": {
+                      "themeColorType": "visualizationColors",
+                      "position": 5
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 10,
+            "y": 0,
+            "width": 2,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "report-status",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "00148abb",
+                  "fields": [
+                    {
+                      "name": "report_name",
+                      "expression": "`report_name`"
+                    },
+                    {
+                      "name": "job_name",
+                      "expression": "`job_name`"
+                    },
+                    {
+                      "name": "job_id",
+                      "expression": "`job_id`"
+                    },
+                    {
+                      "name": "run_id",
+                      "expression": "`run_id`"
+                    },
+                    {
+                      "name": "report_run_date",
+                      "expression": "`report_run_date`"
+                    },
+                    {
+                      "name": "job_parameters",
+                      "expression": "`job_parameters`"
+                    },
+                    {
+                      "name": "result_state",
+                      "expression": "`result_state`"
+                    },
+                    {
+                      "name": "report_status_json",
+                      "expression": "`report_status_json`"
+                    },
+                    {
+                      "name": "run_start_time",
+                      "expression": "`run_start_time`"
+                    },
+                    {
+                      "name": "run_end_time",
+                      "expression": "`run_end_time`"
+                    },
+                    {
+                      "name": "real_elapsed_seconds",
+                      "expression": "`real_elapsed_seconds`"
+                    },
+                    {
+                      "name": "report_frequency",
+                      "expression": "`report_frequency`"
+                    },
+                    {
+                      "name": "report_run_type",
+                      "expression": "`report_run_type`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "rowsPerPage": 25,
+              "displayRowNumbers": false,
+              "freezeUpToColumnNumber": 0,
+              "frame": {
+                "title": "Report Status",
+                "showTitle": true
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "report_name",
+                    "useForSearch": false,
+                    "displayName": "Report Name",
+                    "actions": {
+                      "hover": {
+                        "type": "tooltip",
+                        "tooltipTemplate": "{{ @ }}"
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "job_name",
+                    "useForSearch": false,
+                    "displayName": "Job Name",
+                    "actions": {
+                      "hover": {
+                        "type": "tooltip",
+                        "tooltipTemplate": "{{ @ }}"
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "job_id",
+                    "displayName": "Job ID"
+                  },
+                  {
+                    "fieldName": "run_id",
+                    "useForSearch": false,
+                    "displayName": "Run ID",
+                    "actions": {
+                      "hover": {
+                        "type": "tooltip",
+                        "tooltipTemplate": "{{ @ }}"
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "report_run_date",
+                    "displayName": "Run Date"
+                  },
+                  {
+                    "fieldName": "job_parameters",
+                    "useForSearch": false,
+                    "displayName": "Run Params",
+                    "actions": {
+                      "hover": {
+                        "type": "tooltip",
+                        "tooltipTemplate": "{{ @ }}"
+                      }
+                    },
+                    "style": {
+                      "type": "json"
+                    }
+                  },
+                  {
+                    "fieldName": "result_state",
+                    "useForSearch": false,
+                    "displayName": "Status",
+                    "actions": {
+                      "hover": {
+                        "type": "tooltip",
+                        "tooltipTemplate": "{{ @ }}"
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "report_status_json",
+                    "useForSearch": false,
+                    "displayName": "Failed Status JSON",
+                    "actions": {
+                      "hover": {
+                        "type": "tooltip",
+                        "tooltipTemplate": "{{ @ }}"
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "run_start_time",
+                    "useForSearch": false,
+                    "contentAlignment": "right",
+                    "format": {
+                      "type": "moment.js",
+                      "format": "DD/MM/YYYY HH:mm"
+                    },
+                    "displayName": "Start Date",
+                    "actions": {
+                      "hover": {
+                        "type": "tooltip",
+                        "tooltipTemplate": "{{ @ }}"
+                      }
+                    },
+                    "style": {
+                      "type": "basic"
+                    }
+                  },
+                  {
+                    "fieldName": "run_end_time",
+                    "useForSearch": false,
+                    "contentAlignment": "right",
+                    "format": {
+                      "type": "moment.js",
+                      "format": "DD/MM/YYYY HH:mm"
+                    },
+                    "displayName": "End Date",
+                    "actions": {
+                      "hover": {
+                        "type": "tooltip",
+                        "tooltipTemplate": "{{ @ }}"
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "real_elapsed_seconds",
+                    "displayName": "Elapsed Time"
+                  },
+                  {
+                    "fieldName": "report_frequency",
+                    "displayName": "Run Frequency"
+                  },
+                  {
+                    "fieldName": "report_run_type",
+                    "displayName": "Run Type"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 12,
+            "height": 9
+          }
+        },
+        {
+          "widget": {
+            "name": "ce164ce0",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ff582547",
+                  "fields": [
+                    {
+                      "name": "success_rate",
+                      "expression": "`success_rate`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Ever Succeeded Runs %",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "success_rate",
+                  "style": {
+                    "color": {
+                      "themeColorType": "visualizationColors",
+                      "position": 3
+                    }
+                  },
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 2,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "7a71b15b",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ff582547",
+                  "fields": [
+                    {
+                      "name": "fail_rate",
+                      "expression": "`fail_rate`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Ever Failed Runs %",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "fail_rate",
+                  "style": {
+                    "color": {
+                      "themeColorType": "visualizationColors",
+                      "position": 4
+                    }
+                  },
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 0,
+            "width": 2,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "84f91c6b",
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {},
+              "frame": {
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 13,
+            "width": 4,
+            "height": 1
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "59eb4a11",
+      "displayName": "Global Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "job",
+            "queries": [
+              {
+                "name": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_job_name",
+                "query": {
+                  "datasetName": "00148abb",
+                  "fields": [
+                    {
+                      "name": "job_name",
+                      "expression": "`job_name`"
+                    },
+                    {
+                      "name": "job_name_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "job_name",
+                    "queryName": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_job_name"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Job Name"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "start-date",
+            "queries": [
+              {
+                "name": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_run_start_time",
+                "query": {
+                  "datasetName": "00148abb",
+                  "fields": [
+                    {
+                      "name": "run_start_time",
+                      "expression": "`run_start_time`"
+                    },
+                    {
+                      "name": "run_start_time_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-date-range-picker",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "run_start_time",
+                    "queryName": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_run_start_time"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Start Date"
+              },
+              "selection": {
+                "defaultSelection": {
+                  "range": {
+                    "dataType": "DATETIME",
+                    "min": {
+                      "value": "now-1d/d"
+                    },
+                    "max": {
+                      "value": "now/d"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "end-date-1",
+            "queries": [
+              {
+                "name": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_run_end_time",
+                "query": {
+                  "datasetName": "00148abb",
+                  "fields": [
+                    {
+                      "name": "run_end_time",
+                      "expression": "`run_end_time`"
+                    },
+                    {
+                      "name": "run_end_time_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-date-picker",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "run_end_time",
+                    "queryName": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_run_end_time"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "End Date"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "status",
+            "queries": [
+              {
+                "name": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_result_state",
+                "query": {
+                  "datasetName": "00148abb",
+                  "fields": [
+                    {
+                      "name": "result_state",
+                      "expression": "`result_state`"
+                    },
+                    {
+                      "name": "result_state_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Status"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "result_state",
+                    "queryName": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_result_state"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "frequency",
+            "queries": [
+              {
+                "name": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_report_frequency",
+                "query": {
+                  "datasetName": "00148abb",
+                  "fields": [
+                    {
+                      "name": "report_frequency",
+                      "expression": "`report_frequency`"
+                    },
+                    {
+                      "name": "report_frequency_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "report_frequency",
+                    "queryName": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_report_frequency"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Report Frequency"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "report-type",
+            "queries": [
+              {
+                "name": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_report_type",
+                "query": {
+                  "datasetName": "00148abb",
+                  "fields": [
+                    {
+                      "name": "report_type",
+                      "expression": "`report_type`"
+                    },
+                    {
+                      "name": "report_type_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Report Type"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "report_type",
+                    "queryName": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_report_type"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 10,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "report-name",
+            "queries": [
+              {
+                "name": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_report_name",
+                "query": {
+                  "datasetName": "00148abb",
+                  "fields": [
+                    {
+                      "name": "report_name",
+                      "expression": "`report_name`"
+                    },
+                    {
+                      "name": "report_name_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Report Name"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "report_name",
+                    "queryName": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_report_name"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "run-type",
+            "queries": [
+              {
+                "name": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_report_run_type",
+                "query": {
+                  "datasetName": "00148abb",
+                  "fields": [
+                    {
+                      "name": "report_run_type",
+                      "expression": "`report_run_type`"
+                    },
+                    {
+                      "name": "report_run_type_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Run Type"
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "report_run_type",
+                    "queryName": "dashboards/01f0dce40d021016b3d11d1b4d809cf5/datasets/01f0f12c1a15163da3c21f3fa70cf785_report_run_type"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 1,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}

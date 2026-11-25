@@ -1,0 +1,37 @@
+resources:
+  jobs:
+    HoistDebtJson:
+      name: HoistDebtJson
+      tags:
+        category: "report"
+      max_concurrent_runs: 5
+      parameters:
+        - name: run_date
+          default: ""
+      git_source:
+        git_url: https://git-codecommit.eu-central-1.amazonaws.com/v1/repos/gr.cepal.dna.de.delivery
+        git_provider: awsCodeCommit
+        git_branch: master
+      tasks:
+        - task_key: hoist_debt_json
+          max_retries: 0
+          notebook_task:
+            notebook_path: HoistDebtJson/HoistDebtJson
+            base_parameters:
+              run_date: "{{job.parameters.run_date}}"
+            source: GIT
+
+      queue:
+        enabled: true
+      run_as:
+        service_principal_name: 00f3ea27-8236-4f6a-8f9c-177668555720
+      permissions:
+        - group_name: Cepal-DE-Leads
+          permission_level: CAN_MANAGE_RUN
+      email_notifications:
+        on_failure:
+          - vtsourouni@cepal.gr
+      webhook_notifications:
+        on_failure:
+          - id: e9dac10d-3c9e-4967-a099-7bcb11218574
+      performance_target: PERFORMANCE_OPTIMIZED

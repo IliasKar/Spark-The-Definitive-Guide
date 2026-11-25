@@ -1,0 +1,60 @@
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d1
+from bi.Loan 
+group by AccountNumber
+
+select CDI, max(ReferenceDate) ref_date
+into #max_d2
+from bi.Customer
+group by CDI
+
+select AccountNumber, max(ActivityDate) act_date
+into #max_d3
+from bi.ContactActivity
+group by AccountNumber
+
+select AccountNumber, max(ETLLoadingDatetime) etl_date
+into #max_d4
+from bi.LoanCustomerRelation
+group by AccountNumber
+
+select AccountNumber, max(ReferenceDate) ref_date
+into #max_d5
+from bi.Settlement
+group by AccountNumber
+
+----------------------------------------------------------
+
+select distinct a.AccountNumber, AgreementNumber, IsActiveFlag, TaxNumber, Queue, PortfolioName, FinalBucket, SettlementBucket, SourceBucket, SourcePastDueDays, AssetSegment, ProductKey, ProductDesc, SubProductDesc, SPV, OnBalance, CustomerSegment, Channel, AssignmentProcess, ReferenceDate
+into #loan
+from bi.Loan a
+inner join #max_d1 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+
+select distinct a.CDI, LegalForm, DeceasedFlag
+into #customer
+from bi.Customer a
+inner join #max_d2 b
+on a.CDI=b.CDI and a.ReferenceDate=b.ref_date
+
+select distinct a.AccountNumber, CDI, ContactType, ActivityDate, ActivityName, PromiseStatus
+into #cont_act
+from bi.ContactActivity a
+inner join #max_d3 b
+on a.AccountNumber=b.AccountNumber and a.ActivityDate=b.act_date
+
+select distinct a.AccountNumber, CDI, RelationType
+into #loan_cust_rel
+from bi.LoanCustomerRelation a
+inner join #max_d4 b
+on a.AccountNumber=b.AccountNumber and a.ETLLoadingDatetime=b.etl_date
+
+select a.AccountNumber, SettlementStatus
+into #settlement
+from bi.Settlement a
+inner join #max_d5 b
+on a.AccountNumber=b.AccountNumber and a.ReferenceDate=b.ref_date
+------------------------------------------------------------------
+
+
+

@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "Orbit",
+    "output_file_prefix": "Orbit_DetailedPortfolio_",
+    "report_output": "internalreports/detailedportfolio/orbit/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InternalReports_DetailedPortfolio_orbit"
+  }
+}

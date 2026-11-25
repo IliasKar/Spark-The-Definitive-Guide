@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "Mercury",
+    "output_file_prefix": "Mercury_DetailedPortfolio_",
+    "report_output": "internalreports/detailedportfolio/mercury/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InternalReports_DetailedPortfolio_mercury"
+  }
+}

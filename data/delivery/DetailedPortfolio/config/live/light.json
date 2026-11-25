@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "Light",
+    "output_file_prefix": "Light_DetailedPortfolio_",
+    "report_output": "internalreports/detailedportfolio/light/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InternalReports_DetailedPortfolio_light"
+  }
+}

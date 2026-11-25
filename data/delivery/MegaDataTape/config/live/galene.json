@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "GALENE",
+    "output_file_prefix": "galene_Megadatatape_report_",
+    "report_output": "investorreports/megadatatape/galene/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InvestorReports_Megadatatape_Galene"
+  }
+}

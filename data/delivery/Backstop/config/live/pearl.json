@@ -1,0 +1,10 @@
+{
+  "report_args": {
+    "portfolio_name": "Pearl Portfolio A",
+    "output_file_prefix": "Pearl_Backstop_",
+    "report_output": "internalreports/backstop/pearl/"
+  },
+  "email_args": {
+    "recipients_entra_group": "DNA_InternalReports_Backstop_pearl"
+  }
+}

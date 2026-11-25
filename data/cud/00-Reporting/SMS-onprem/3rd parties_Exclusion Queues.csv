@@ -1,0 +1,42 @@
+queue;Business Definition
+Orbit_Current Bucket 01 L3758;Exclusion 10dpd
+Light_Current Bucket 01 L3758;Exclusion 10dpd
+MRC_Current Bucket 01 L3758;Exclusion 10dpd
+Cell_Cur SettBucket 01 DPD<11;Exclusion 10dpd
+Cell_Current Bucket 01 L3758;Exclusion 10dpd
+Cell_Settlement Bucket 01 L3758_Non Assig;Exclusion 10dpd
+Cell_Settlement B00;Exclusion 10dpd
+Αναστολή όχλησης by Asset Owner;Exclusions
+Ισχυρισμός_Εξόφλησης;Exclusions
+Αναστολή Όχλησης All Portfolios;Exclusions
+Paid Off Prior Migration;Exclusions
+N.3869_Έναρξη_Διαδικασίας_Έκπτωσης;Exclusions
+Placed Back Cases to Seller;Exclusions
+Dispute investigation;Exclusions
+Orbit Fulfilled Settlements to Recall;Fulfilled Settlement
+Orbit Fulfilled Settlements;Fulfilled Settlement
+N.3869_Εξοφλήσεις;Fulfilled Settlment / Paid Off
+MRC_L3869_Paid_Off;Fulfilled Settlment / Paid Off
+Orbit_Current_Bucket00_Ext;Passive_Current B0
+Light_Current_Bucket00;Passive_Current B0
+Light_Current_Bucket00_L3869;Passive_Current B0
+Light_Current_Bucket00_Judicial;Passive_Current B0
+MRC_Current_Bucket00;Passive_Current B0
+Cell_Current_Bucket00_L3869;Passive_Current B0
+Cell_Current_Bucket00_Judicial;Passive_Current B0
+Cell_Current_Bucket00;Passive_Current B0
+Orbit Customer with Slave account;Passive_customer with slaves Accounts
+Gefyra account dimosiou;passive_GEFYRA
+Orbit CB1+ <30€ Ext;Passive_low debt amt
+Orb_Grace <50€ Ext;Passive_low debt amt
+Cell_No Treatment Segment;Passive_Secured 1st Liens
+Orb_No Treatment Segment;Passive_Secured 1st Liens
+Orbit_slaves without Master;Passive_slaves Accounts
+Orbit WDN;Passive_slaves Accounts
+Orbit Slaves Account;Passive_slaves Accounts
+Orb orhans_no_pledge;Passive_slaves Accounts
+Light Slave Accounts;Passive_slaves Accounts
+Cell Default;Passive_system exclusion
+To be Recall;Passive_to be recall
+Orbit Default;Systemic Check case
+Light Default;Systemic Check case
